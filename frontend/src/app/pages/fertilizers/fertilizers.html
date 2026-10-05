@@ -1,0 +1,55 @@
+<div class="fertilizers-page">
+
+  <h1>🌱 Fertilizers</h1>
+
+  <p>Fertilizer information for farmers</p>
+
+  <p *ngIf="loading" class="message">
+  🌱 Loading fertilizers...
+</p>
+
+  <p *ngIf="errorMessage" class="error">
+    {{ errorMessage }}
+  </p>
+
+  <p *ngIf="!loading && fertilizers.length === 0">
+    No fertilizers found.
+  </p>
+
+  <div
+    class="fertilizer-grid"
+    *ngIf="!loading && fertilizers.length > 0"
+  >
+
+    <div
+      class="fertilizer-card"
+      *ngFor="let fertilizer of fertilizers"
+    >
+
+      <h2>{{ fertilizer.name }}</h2>
+
+      <p>
+        <strong>Type:</strong>
+        {{ fertilizer.type }}
+      </p>
+
+      <p>
+        <strong>Recommended For:</strong>
+        {{ fertilizer.recommendedFor }}
+      </p>
+
+      <p>
+        <strong>Usage:</strong>
+        {{ fertilizer.usageInstructions }}
+      </p>
+
+      <p>
+        <strong>Organic:</strong>
+        {{ fertilizer.isOrganic ? 'Yes 🌿' : 'No' }}
+      </p>
+
+    </div>
+
+  </div>
+
+</div>

@@ -1,0 +1,340 @@
+.ai-chat-page {
+min-height: 100vh;
+padding: 30px 20px;
+background: #f4f7f2;
+display: flex;
+justify-content: center;
+align-items: flex-start;
+}
+
+.chat-card {
+width: 100%;
+max-width: 900px;
+min-height: 80vh;
+background: #ffffff;
+border-radius: 16px;
+box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+display: flex;
+flex-direction: column;
+overflow: hidden;
+}
+
+/* Header */
+
+.chat-header {
+padding: 24px;
+background: #2e7d32;
+color: #ffffff;
+}
+
+.chat-header h1 {
+margin: 0 0 8px;
+font-size: 26px;
+font-weight: 700;
+}
+
+.chat-header p {
+margin: 0;
+font-size: 15px;
+line-height: 1.6;
+opacity: 0.95;
+}
+
+/* Chat body */
+
+.chat-body {
+flex: 1;
+padding: 24px;
+overflow-y: auto;
+min-height: 400px;
+max-height: 65vh;
+background: #f8faf7;
+}
+
+/* Message row */
+
+.message-row {
+display: flex;
+margin-bottom: 18px;
+}
+
+.user-row {
+justify-content: flex-end;
+}
+
+.ai-row {
+justify-content: flex-start;
+}
+
+/* Message bubble */
+
+.message-bubble {
+max-width: 82%;
+padding: 14px 18px;
+border-radius: 16px;
+line-height: 1.6;
+font-size: 15px;
+}
+
+/* User */
+
+.user-bubble {
+background: #2e7d32;
+color: #ffffff;
+border-bottom-right-radius: 4px;
+}
+
+/* AI */
+
+.ai-bubble {
+background: #ffffff;
+color: #333333;
+border: 1px solid #e0e7df;
+border-bottom-left-radius: 4px;
+}
+
+/* Message name */
+
+.message-name {
+font-size: 13px;
+font-weight: 700;
+margin-bottom: 8px;
+}
+
+/* Message content */
+
+.message-text {
+line-height: 1.7;
+white-space: normal;
+word-wrap: break-word;
+overflow-wrap: break-word;
+}
+
+/* Bold text from AI */
+
+.message-text strong {
+font-weight: 700;
+}
+
+/* Horizontal line */
+
+.message-text hr {
+margin: 16px 0;
+border: 0;
+border-top: 1px solid #d9e2d6;
+}
+
+/* AI text alignment */
+
+.ai-bubble .message-text {
+text-align: left;
+}
+
+/* User text alignment */
+
+.user-bubble .message-text {
+text-align: left;
+}
+
+/* Make Telugu text comfortable to read */
+
+.ai-bubble .message-text {
+font-size: 16px;
+}
+
+/* Loading */
+
+.typing {
+color: #666666;
+font-style: italic;
+}
+
+/* Error */
+
+.error-message {
+margin: 10px 0;
+padding: 12px 16px;
+background: #ffebee;
+color: #c62828;
+border: 1px solid #ffcdd2;
+border-radius: 8px;
+font-size: 14px;
+}
+
+/* Input section */
+
+.chat-input {
+display: flex;
+gap: 12px;
+padding: 18px;
+background: #ffffff;
+border-top: 1px solid #e5e5e5;
+}
+
+.chat-input textarea {
+flex: 1;
+min-height: 55px;
+max-height: 150px;
+resize: vertical;
+padding: 12px 14px;
+border: 1px solid #cfd8cc;
+border-radius: 10px;
+outline: none;
+font-size: 15px;
+line-height: 1.5;
+background: #ffffff;
+}
+
+.chat-input textarea:focus {
+border-color: #2e7d32;
+box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.1);
+}
+
+/* Ask AI button */
+
+.chat-input button {
+align-self: flex-end;
+min-width: 110px;
+height: 48px;
+padding: 0 18px;
+border: none;
+border-radius: 10px;
+background: #2e7d32;
+color: #ffffff;
+font-size: 15px;
+font-weight: 700;
+cursor: pointer;
+transition: background 0.2s ease;
+}
+
+.chat-input button:hover:not(:disabled) {
+background: #256628;
+}
+
+.chat-input button:disabled {
+background: #a5b5a5;
+cursor: not-allowed;
+}
+
+/* Hint */
+
+.input-hint {
+padding: 0 18px 18px;
+background: #ffffff;
+color: #777777;
+font-size: 12px;
+text-align: center;
+}
+
+/* Scrollbar */
+
+.chat-body::-webkit-scrollbar {
+width: 8px;
+}
+
+.chat-body::-webkit-scrollbar-track {
+background: #f1f1f1;
+}
+
+.chat-body::-webkit-scrollbar-thumb {
+background: #b8c5b5;
+border-radius: 10px;
+}
+
+.chat-body::-webkit-scrollbar-thumb:hover {
+background: #98a995;
+}
+
+/* Tablet */
+
+@media (max-width: 768px) {
+
+.ai-chat-page {
+padding: 15px;
+}
+
+.chat-card {
+min-height: 90vh;
+border-radius: 12px;
+}
+
+.chat-header h1 {
+font-size: 22px;
+}
+
+.chat-body {
+padding: 16px;
+max-height: 65vh;
+}
+
+.message-bubble {
+max-width: 90%;
+}
+
+}
+
+/* Mobile */
+
+@media (max-width: 480px) {
+
+.ai-chat-page {
+padding: 0;
+}
+
+.chat-card {
+min-height: 100vh;
+border-radius: 0;
+}
+
+.chat-header {
+padding: 18px;
+}
+
+.chat-header h1 {
+font-size: 20px;
+}
+
+.chat-header p {
+font-size: 14px;
+}
+
+.chat-body {
+padding: 12px;
+min-height: 0;
+max-height: none;
+flex: 1;
+}
+
+.message-bubble {
+max-width: 94%;
+padding: 12px 14px;
+font-size: 14px;
+}
+
+.ai-bubble .message-text {
+font-size: 15px;
+}
+
+.chat-input {
+padding: 12px;
+gap: 8px;
+}
+
+.chat-input textarea {
+min-height: 50px;
+font-size: 14px;
+}
+
+.chat-input button {
+min-width: 85px;
+height: 46px;
+padding: 0 12px;
+font-size: 14px;
+}
+
+.input-hint {
+padding: 0 12px 12px;
+font-size: 11px;
+}
+
+}

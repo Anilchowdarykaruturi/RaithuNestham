@@ -1,0 +1,104 @@
+<div class="equipment-page">
+
+  <div class="page-header">
+    <h1>🚜 Agricultural Equipment Subsidies</h1>
+
+    <p>
+      Explore agricultural equipment subsidy information available
+      for farmers in Andhra Pradesh.
+    </p>
+  </div>
+
+  <div *ngIf="loading" class="loading">
+    Loading equipment subsidies...
+  </div>
+
+  <div *ngIf="errorMessage" class="error">
+    {{ errorMessage }}
+  </div>
+
+  <div
+    *ngIf="!loading && !errorMessage && subsidies.length === 0"
+    class="empty">
+
+    No equipment subsidy information available.
+
+  </div>
+
+  <div
+    *ngIf="!loading && !errorMessage && subsidies.length > 0"
+    class="subsidy-grid">
+
+    <div
+      class="subsidy-card"
+      *ngFor="let subsidy of subsidies">
+
+      <div class="card-header">
+
+        <div>
+          <h2>🚜 {{ subsidy.equipmentName }}</h2>
+
+          <span class="category">
+            {{ subsidy.category }}
+          </span>
+        </div>
+
+      </div>
+
+      <div class="card-content">
+
+        <div class="info-row">
+          <strong>Scheme</strong>
+          <span>{{ subsidy.schemeName }}</span>
+        </div>
+
+        <div class="info-row">
+          <strong>Eligible Farmers</strong>
+          <span>{{ subsidy.eligibleFarmers }}</span>
+        </div>
+
+        <div class="info-row">
+          <strong>Subsidy Details</strong>
+          <span>{{ subsidy.subsidyDetails }}</span>
+        </div>
+
+        <div class="info-row">
+          <strong>Maximum Subsidy</strong>
+          <span>{{ subsidy.maximumSubsidy }}</span>
+        </div>
+
+        <div class="info-row">
+          <strong>Application Process</strong>
+          <span>{{ subsidy.applicationProcess }}</span>
+        </div>
+
+        <div class="info-row">
+          <strong>State</strong>
+          <span>{{ subsidy.state }}</span>
+        </div>
+
+        <div class="info-row">
+          <strong>Last Verified</strong>
+          <span>{{ subsidy.lastVerified }}</span>
+        </div>
+
+      </div>
+
+      <div class="card-footer">
+
+        <a
+          [href]="subsidy.officialWebsite"
+          target="_blank"
+          rel="noopener noreferrer">
+
+          🌐 Official Website
+
+        </a>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

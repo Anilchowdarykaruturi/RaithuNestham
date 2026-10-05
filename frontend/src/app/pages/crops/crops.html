@@ -1,0 +1,55 @@
+<div class="crops-page">
+
+  <h1>🌾 Crops</h1>
+
+  <p class="subtitle">
+    View crops available for farmers
+  </p>
+
+  <div *ngIf="loading" class="message">
+  🌾 Loading crops...
+</div>
+
+  <div *ngIf="errorMessage" class="error">
+    {{ errorMessage }}
+  </div>
+
+  <div
+    *ngIf="!loading && !errorMessage && crops.length === 0"
+    class="no-data"
+  >
+    No crops found.
+  </div>
+
+  <div
+    class="crop-grid"
+    *ngIf="!loading && crops.length > 0"
+  >
+
+    <div
+      class="crop-card"
+      *ngFor="let crop of crops"
+    >
+
+      <h2>{{ crop.name }}</h2>
+
+      <p>
+        <strong>Telugu Name:</strong>
+        {{ crop.teluguName }}
+      </p>
+
+      <p>
+        <strong>Season:</strong>
+        {{ crop.season }}
+      </p>
+
+      <p>
+        <strong>Description:</strong>
+        {{ crop.description }}
+      </p>
+
+    </div>
+
+  </div>
+
+</div>

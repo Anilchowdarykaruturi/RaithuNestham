@@ -1,0 +1,171 @@
+<div class="register-page">
+
+  <div class="register-box">
+
+    <h1>🌾 RaithuNestham</h1>
+
+    <h2>Create Account</h2>
+
+    <form (ngSubmit)="register()">
+
+      <!-- Username -->
+      <div class="form-group">
+        <label for="username">Username</label>
+
+        <input
+          id="username"
+          type="text"
+          name="username"
+          [(ngModel)]="username"
+          placeholder="Enter username"
+          required
+          [disabled]="loading"
+        />
+      </div>
+
+      <!-- Full Name -->
+      <div class="form-group">
+        <label for="fullName">Full Name</label>
+
+        <input
+          id="fullName"
+          type="text"
+          name="fullName"
+          [(ngModel)]="fullName"
+          placeholder="Enter your full name"
+          required
+          [disabled]="loading"
+        />
+      </div>
+
+      <!-- Phone Number -->
+      <div class="form-group">
+        <label for="phoneNumber">Phone Number</label>
+
+        <input
+          id="phoneNumber"
+          type="tel"
+          name="phoneNumber"
+          [(ngModel)]="phoneNumber"
+          placeholder="Enter phone number"
+          required
+          [disabled]="loading"
+        />
+      </div>
+
+      <!-- Village -->
+      <div class="form-group">
+        <label for="village">Village</label>
+
+        <input
+          id="village"
+          type="text"
+          name="village"
+          [(ngModel)]="village"
+          placeholder="Enter village"
+          required
+          [disabled]="loading"
+        />
+      </div>
+
+      <!-- Mandal -->
+      <div class="form-group">
+        <label for="mandal">Mandal</label>
+
+        <input
+          id="mandal"
+          type="text"
+          name="mandal"
+          [(ngModel)]="mandal"
+          placeholder="Enter mandal"
+          required
+          [disabled]="loading"
+        />
+      </div>
+
+      <!-- District -->
+      <div class="form-group">
+        <label for="district">District</label>
+
+        <input
+          id="district"
+          type="text"
+          name="district"
+          [(ngModel)]="district"
+          placeholder="Enter district"
+          required
+          [disabled]="loading"
+        />
+      </div>
+
+      <!-- Password -->
+      <div class="form-group">
+        <label for="password">Password</label>
+
+        <input
+          id="password"
+          type="password"
+          name="password"
+          [(ngModel)]="password"
+          placeholder="Enter password"
+          required
+          [disabled]="loading"
+        />
+      </div>
+
+      <!-- Confirm Password -->
+      <div class="form-group">
+        <label for="confirmPassword">Confirm Password</label>
+
+        <input
+          id="confirmPassword"
+          type="password"
+          name="confirmPassword"
+          [(ngModel)]="confirmPassword"
+          placeholder="Confirm password"
+          required
+          [disabled]="loading"
+        />
+      </div>
+
+      <!-- Error Message -->
+      @if (errorMessage) {
+
+        <div class="error-message">
+          {{ errorMessage }}
+        </div>
+
+      }
+
+      <!-- Success Message -->
+      @if (successMessage) {
+
+        <div class="success-message">
+          {{ successMessage }}
+        </div>
+
+      }
+
+      <!-- Register Button -->
+      <button
+        type="submit"
+        [disabled]="loading">
+
+        @if (loading) {
+          Creating account...
+        } @else {
+          Register
+        }
+
+      </button>
+
+    </form>
+
+    <p>
+      Already have an account?
+      <a routerLink="/login">Login</a>
+    </p>
+
+  </div>
+
+</div>

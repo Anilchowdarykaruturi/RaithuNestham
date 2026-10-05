@@ -1,0 +1,92 @@
+<div class="weather-page">
+
+  <div class="weather-header">
+    <h1>🌾 RaithuNestham Weather</h1>
+    <p>Check the latest weather information for your village.</p>
+  </div>
+
+  <div class="search-box">
+
+    <input
+      type="text"
+      [(ngModel)]="village"
+      placeholder="Enter village name"
+    />
+
+   <button
+  type="button"
+  (click)="loadWeather()"
+  [disabled]="loading"
+>
+  @if (loading) {
+    Loading...
+  } @else {
+    🔍 Search
+  }
+</button>
+
+  </div>
+
+  <div *ngIf="loading" class="message">
+    Loading weather...
+  </div>
+
+  <div *ngIf="errorMessage" class="error">
+    {{ errorMessage }}
+  </div>
+
+  <div
+    *ngIf="!loading && !errorMessage && weather.length === 0"
+    class="message"
+  >
+    No weather information found.
+  </div>
+
+  <div
+    class="weather-grid"
+    *ngIf="!loading && weather.length > 0"
+  >
+
+    <div
+      class="weather-card"
+      *ngFor="let item of weather"
+    >
+
+      <h2>📍 {{ item.village }}</h2>
+
+      <div class="condition">
+        🌤️ {{ item.weatherCondition }}
+      </div>
+
+      <div class="weather-info">
+
+        <div>
+          <span>🌡️</span>
+          <strong>Temperature</strong>
+          <p>{{ item.temperature }} °C</p>
+        </div>
+
+        <div>
+          <span>💧</span>
+          <strong>Humidity</strong>
+          <p>{{ item.humidity }} %</p>
+        </div>
+
+        <div>
+          <span>🌧️</span>
+          <strong>Rainfall</strong>
+          <p>{{ item.rainfall }} mm</p>
+        </div>
+
+      </div>
+
+      <p class="recorded">
+        Updated:
+        {{ item.recordedAt | date:'medium' }}
+      </p>
+
+    </div>
+
+  </div>
+
+</div>

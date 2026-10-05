@@ -1,0 +1,56 @@
+<div class="pesticides-page">
+
+  <h1>🌿 Pesticides</h1>
+
+  <p class="subtitle">
+    Pesticide information for farmers
+  </p>
+
+  <!-- Loading -->
+  <p *ngIf="loading" class="message">
+  🌿 Loading pesticides...
+</p>>
+
+  <!-- Error -->
+  <p *ngIf="errorMessage" class="error">
+    {{ errorMessage }}
+  </p>
+
+  <!-- No Data -->
+  <p *ngIf="!loading && pesticides.length === 0 && !errorMessage">
+    No pesticides found.
+  </p>
+
+  <!-- Pesticide Cards -->
+  <div
+    class="pesticide-grid"
+    *ngIf="!loading && pesticides.length > 0"
+  >
+
+    <div
+      class="pesticide-card"
+      *ngFor="let pesticide of pesticides"
+    >
+
+      <h2>{{ pesticide.name }}</h2>
+
+      <p>
+        <strong>Target Pest:</strong>
+        {{ pesticide.targetPest }}
+      </p>
+
+      <p>
+        <strong>Recommended Crop:</strong>
+        {{ pesticide.recommendedCrop }}
+      </p>
+
+      <p>
+        <strong>Usage:</strong>
+        {{ pesticide.usageInstructions }}
+      </p>
+
+    </div>
+
+  </div>
+
+</div>

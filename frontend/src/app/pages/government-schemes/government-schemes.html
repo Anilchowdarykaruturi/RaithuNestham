@@ -1,0 +1,81 @@
+<div class="schemes-page">
+
+  <h1>🏛️ Government Schemes</h1>
+
+  <p class="subtitle">
+    Government schemes and benefits for farmers
+  </p>
+
+  <!-- Loading -->
+ <p *ngIf="loading" class="message">
+  🏛️ Loading government schemes...
+</p>
+
+  <!-- Error -->
+  <p *ngIf="errorMessage" class="error">
+    {{ errorMessage }}
+  </p>
+
+  <!-- No Data -->
+  <p
+    *ngIf="
+      !loading &&
+      schemes.length === 0 &&
+      !errorMessage
+    "
+  >
+    No government schemes found.
+  </p>
+
+  <!-- Government Scheme Cards -->
+  <div
+    class="scheme-grid"
+    *ngIf="
+      !loading &&
+      schemes.length > 0
+    "
+  >
+
+    <div
+      class="scheme-card"
+      *ngFor="let scheme of schemes"
+    >
+
+      <h2>
+        {{ scheme.name }}
+      </h2>
+
+      <p>
+        <strong>Description:</strong>
+        {{ scheme.description }}
+      </p>
+
+      <p>
+        <strong>Eligibility:</strong>
+        {{ scheme.eligibility }}
+      </p>
+
+      <p>
+        <strong>Benefits:</strong>
+        {{ scheme.benefits }}
+      </p>
+
+      <p>
+        <strong>Application:</strong>
+        {{ scheme.applicationProcess }}
+      </p>
+
+      <a
+        *ngIf="scheme.officialWebsite"
+        [href]="scheme.officialWebsite"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Official Website →
+      </a>
+
+    </div>
+
+  </div>
+
+</div>

@@ -1,0 +1,132 @@
+<div class="ai-chat-page">
+
+  <div class="chat-card">
+
+```
+<!-- Header -->
+<div class="chat-header">
+
+  <h1>🌾 RaithuNestham AI Assistant</h1>
+
+  <p>
+    Ask questions about crops, fertilizers, pesticides,
+    weather, and farming.
+  </p>
+
+</div>
+
+<!-- Chat Messages -->
+<div class="chat-body">
+
+  <!-- Conversation -->
+  @for (message of messages; track $index) {
+
+    <div
+      class="message-row"
+      [class.user-row]="message.sender === 'user'"
+      [class.ai-row]="message.sender === 'ai'"
+    >
+
+      <div
+        class="message-bubble"
+        [class.user-bubble]="message.sender === 'user'"
+        [class.ai-bubble]="message.sender === 'ai'"
+      >
+
+        <div class="message-name">
+
+          @if (message.sender === 'user') {
+
+            You
+
+          } @else {
+
+            🌾 AI Assistant
+
+          }
+
+        </div>
+
+        <div
+          class="message-text"
+          [innerHTML]="message.html || message.text"
+        ></div>
+
+      </div>
+
+    </div>
+
+  }
+
+  <!-- Loading -->
+  @if (loading) {
+
+    <div class="message-row ai-row">
+
+      <div class="message-bubble ai-bubble">
+
+        <div class="message-name">
+          🌾 AI Assistant
+        </div>
+
+        <div class="typing">
+          AI is thinking...
+        </div>
+
+      </div>
+
+    </div>
+
+  }
+
+  <!-- Error -->
+  @if (error) {
+
+    <div class="error-message">
+      {{ error }}
+    </div>
+
+  }
+
+</div>
+
+<!-- Input -->
+<div class="chat-input">
+
+  <textarea
+    [(ngModel)]="question"
+    (keydown)="onEnter($event)"
+    placeholder="Ask your farming question..."
+    rows="2"
+    [disabled]="loading"
+  ></textarea>
+
+  <button
+    type="button"
+    (click)="askQuestion()"
+    [disabled]="loading || !question.trim()"
+  >
+
+    @if (loading) {
+
+      Asking...
+
+    } @else {
+
+      Ask AI
+
+    }
+
+  </button>
+
+</div>
+
+<!-- Hint -->
+<div class="input-hint">
+  Press Enter to send • Shift + Enter for a new line
+</div>
+```
+
+  </div>
+
+</div>

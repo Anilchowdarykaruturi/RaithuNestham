@@ -1,0 +1,164 @@
+* {
+  box-sizing: border-box;
+}
+
+/* Main page */
+
+.fertilizers-page {
+  width: 100%;
+  min-height: 100vh;
+  padding: 30px;
+  background: #f4f7f2;
+}
+
+/* Heading */
+
+.fertilizers-page h1 {
+  margin: 0 0 5px;
+  color: #2e7d32;
+  font-size: 30px;
+}
+
+.fertilizers-page > p {
+  margin: 0 0 25px;
+  color: #666;
+  font-size: 15px;
+}
+
+/* Loading */
+
+.message {
+  padding: 15px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  background: white;
+  color: #555;
+  text-align: center;
+}
+
+/* Error */
+
+.error {
+  padding: 12px 15px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  background: #ffebee;
+  color: #c62828;
+  font-size: 14px;
+}
+
+/* Empty state */
+
+.no-data {
+  padding: 20px;
+  border-radius: 8px;
+  background: white;
+  color: #777;
+  text-align: center;
+}
+
+/* Fertilizer grid */
+
+.fertilizer-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+/* Fertilizer card */
+
+.fertilizer-card {
+  min-width: 0;
+  padding: 20px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #ddd;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+}
+
+.fertilizer-card h2 {
+  margin: 0 0 15px;
+  color: #2e7d32;
+  font-size: 21px;
+}
+
+.fertilizer-card p {
+  margin: 8px 0;
+  line-height: 1.5;
+  color: #444;
+  overflow-wrap: anywhere;
+}
+
+.fertilizer-card strong {
+  color: #333;
+}
+
+/* Tablet */
+
+@media (max-width: 900px) {
+
+  .fertilizers-page {
+    padding: 20px;
+  }
+
+  .fertilizer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Mobile */
+
+@media (max-width: 600px) {
+
+  .fertilizers-page {
+    padding: 15px 10px;
+  }
+
+  .fertilizers-page h1 {
+    font-size: 24px;
+  }
+
+  .fertilizers-page > p {
+    margin-bottom: 20px;
+    font-size: 14px;
+  }
+
+  .fertilizer-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .fertilizer-card {
+    padding: 18px;
+  }
+
+  .fertilizer-card h2 {
+    font-size: 20px;
+  }
+}
+
+/* Very small phones */
+
+@media (max-width: 360px) {
+
+  .fertilizers-page {
+    padding: 10px 6px;
+  }
+
+  .fertilizers-page h1 {
+    font-size: 22px;
+  }
+
+  .fertilizer-card {
+    padding: 15px;
+  }
+
+  .fertilizer-card h2 {
+    font-size: 18px;
+  }
+
+  .fertilizer-card p {
+    font-size: 14px;
+  }
+}

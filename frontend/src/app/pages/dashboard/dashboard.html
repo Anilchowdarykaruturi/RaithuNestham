@@ -1,0 +1,193 @@
+```html
+<div class="dashboard">
+
+  <!-- Header -->
+  <header class="dashboard-header">
+
+    <div>
+      <h1>🌾 Welcome to RaithuNestham</h1>
+      <p>రైతు అన్నా నీకు తోడుగా</p>
+    </div>
+
+    <button
+      type="button"
+      class="logout-btn"
+      (click)="logout()">
+      Logout
+    </button>
+
+  </header>
+
+
+  <!-- Main Content -->
+  <main class="dashboard-content">
+
+    <!-- Intro -->
+    <div class="dashboard-intro">
+
+      <h2>Smart Farming Assistant</h2>
+
+      <p>
+        Everything you need to make better farming decisions.
+      </p>
+
+    </div>
+
+
+    <!-- Feature Cards -->
+    <div class="dashboard-cards">
+
+
+      <!-- Weather -->
+      <div class="card">
+
+        <div class="icon">🌤️</div>
+
+        <h2>Weather</h2>
+
+        <p>
+          Check current weather conditions and
+          rainfall information for your village.
+        </p>
+
+        <a
+          routerLink="/weather"
+          class="card-button">
+          View Weather
+        </a>
+
+      </div>
+
+
+      <!-- Crops -->
+      <div class="card">
+
+        <div class="icon">🌱</div>
+
+        <h2>Crops</h2>
+
+        <p>
+          Explore crop information, seasons,
+          and farming recommendations.
+        </p>
+
+        <a
+          routerLink="/crops"
+          class="card-button">
+          View Crops
+        </a>
+
+      </div>
+
+
+      <!-- Fertilizers -->
+      <div class="card">
+
+        <div class="icon">💊</div>
+
+        <h2>Fertilizers</h2>
+
+        <p>
+          Find fertilizer information and
+          recommended usage for crops.
+        </p>
+
+        <a
+          routerLink="/fertilizers"
+          class="card-button">
+          View Fertilizers
+        </a>
+
+      </div>
+
+
+      <!-- Pesticides -->
+      <div class="card">
+
+        <div class="icon">🦠</div>
+
+        <h2>Pesticides</h2>
+
+        <p>
+          Learn about pesticides, target pests,
+          and recommended crops.
+        </p>
+
+        <a
+          routerLink="/pesticides"
+          class="card-button">
+          View Pesticides
+        </a>
+
+      </div>
+
+
+      <!-- Government Schemes -->
+      <div class="card">
+
+        <div class="icon">🏛️</div>
+
+        <h2>Government Schemes</h2>
+
+        <p>
+          Explore government schemes,
+          benefits, and eligibility information.
+        </p>
+
+        <a
+          routerLink="/government-schemes"
+          class="card-button">
+          View Schemes
+        </a>
+
+      </div>
+
+
+      <!-- Equipment Subsidies -->
+      <div class="card">
+
+        <div class="icon">🚜</div>
+
+        <h2>Equipment Subsidies</h2>
+
+        <p>
+          Explore agricultural equipment
+          subsidies available for farmers.
+        </p>
+
+        <a
+          routerLink="/equipment-subsidies"
+          class="card-button">
+          View Equipment
+        </a>
+
+      </div>
+
+
+      <!-- AI Assistant -->
+      <div class="card">
+
+        <div class="icon">🤖</div>
+
+        <h2>AI Assistant</h2>
+
+        <p>
+          Ask farming questions and receive
+          AI-powered agricultural guidance.
+        </p>
+
+        <a
+          routerLink="/ai-chat"
+          class="card-button">
+          Ask AI
+        </a>
+
+      </div>
+
+
+    </div>
+
+  </main>
+
+</div>
+```
