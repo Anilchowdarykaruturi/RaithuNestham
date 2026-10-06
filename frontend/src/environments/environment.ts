@@ -1,6 +1,5 @@
 
 export const environment = {
-  production: false,
-  apiUrl: 'http://localhost:5177/api'
+  production: true,
+  apiUrl: 'https://raithunestham.onrender.com/api'
 };
-
