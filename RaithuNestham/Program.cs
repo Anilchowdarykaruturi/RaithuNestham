@@ -57,9 +57,11 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AngularPolicy", policy =>
     {
         policy
-            .WithOrigins("http://localhost:4200")
-            .AllowAnyHeader()
-            .AllowAnyMethod();
+      .WithOrigins(
+          "http://localhost:4200",
+          "https://raithunestham.com")
+      .AllowAnyHeader()
+      .AllowAnyMethod();
     });
 });
 
