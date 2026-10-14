@@ -1,5 +1,8 @@
 
+using System;
+using System.Linq;
 using System.Text;
+
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -22,7 +25,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// 3. HTTP client for external APIs
+// 3. HTTP client for external AI APIs
 builder.Services.AddHttpClient();
 
 // 4. Authentication services
@@ -30,12 +33,15 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 
-// 5. RAG services
+// 5. AI service
+builder.Services.AddScoped<IAIService, AIService>();
+
+// 6. RAG services
 builder.Services.AddScoped<KnowledgeDocumentService>();
 builder.Services.AddScoped<EmbeddingService>();
 builder.Services.AddScoped<RagRetrievalService>();
 
-// 6. JWT configuration
+// 7. JWT configuration
 var jwtKey = builder.Configuration["Jwt:Key"];
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 var jwtAudience = builder.Configuration["Jwt:Audience"];
@@ -48,7 +54,7 @@ if (string.IsNullOrWhiteSpace(jwtKey) ||
         "JWT configuration is missing. Check Jwt:Key, Jwt:Issuer, and Jwt:Audience.");
 }
 
-// 7. JWT authentication
+// 8. JWT authentication
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -72,7 +78,7 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
-// 8. CORS for Angular frontend
+// 9. CORS for Angular frontend
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AngularPolicy", policy =>
@@ -89,7 +95,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// 9. Swagger configuration
+// 10. Swagger configuration
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(options =>
@@ -110,45 +116,45 @@ builder.Services.AddSwaggerGen(options =>
         Description = "Enter your JWT token."
     });
 
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
+    options.AddSecurityRequirement(
+        new OpenApiSecurityRequirement
         {
-            new OpenApiSecurityScheme
             {
-                Reference = new OpenApiReference
+                new OpenApiSecurityScheme
                 {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
-        }
-    });
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "Bearer"
+                    }
+                },
+                Array.Empty<string>()
+            }
+        });
 });
 
-// 10. Build application
+// 11. Build application
 var app = builder.Build();
 
-// 11. Swagger in Development only
+// 12. Swagger in Development only
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// 12. Middleware pipeline
+// 13. Middleware pipeline
 app.UseCors("AngularPolicy");
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-// 13. Map controller routes
+// 14. Map controller routes
 app.MapControllers();
 
-// 14. RAG development test endpoints
+// 15. RAG development test endpoints
 if (app.Environment.IsDevelopment())
 {
-    // Test 1: Load knowledge chunks
     app.MapGet("/api/rag/test-chunks",
         async (KnowledgeDocumentService service) =>
         {
@@ -162,7 +168,6 @@ if (app.Environment.IsDevelopment())
         })
         .WithTags("RAG Development Tests");
 
-    // Test 2: Generate an embedding
     app.MapGet("/api/rag/test-embedding",
         async (string text, EmbeddingService service) =>
         {
@@ -177,12 +182,11 @@ if (app.Environment.IsDevelopment())
         })
         .WithTags("RAG Development Tests");
 
-    // Test 3: Retrieve the three most relevant chunks
     app.MapGet("/api/rag/test-retrieval",
         async (string question, RagRetrievalService service) =>
         {
-            var chunks =
-                await service.RetrieveRelevantChunksAsync(question, 3);
+            var chunks = await service.RetrieveRelevantChunksAsync(
+                question, 3);
 
             return Results.Ok(new
             {
@@ -193,12 +197,11 @@ if (app.Environment.IsDevelopment())
         })
         .WithTags("RAG Development Tests");
 
-    // Test 4: Retrieve chunks with similarity scores
     app.MapGet("/api/rag/test-retrieval-scores",
         async (string question, RagRetrievalService service) =>
         {
-            var results =
-                await service.RetrieveScoredChunksAsync(question, 6);
+            var results = await service.RetrieveScoredChunksAsync(
+                question, 6);
 
             return Results.Ok(new
             {
@@ -213,7 +216,6 @@ if (app.Environment.IsDevelopment())
         })
         .WithTags("RAG Development Tests");
 
-    // Test 5: Retrieve chunks using a minimum similarity score
     app.MapGet("/api/rag/test-retrieval-threshold",
         async (
             string question,
@@ -245,5 +247,5 @@ if (app.Environment.IsDevelopment())
         .WithTags("RAG Development Tests");
 }
 
-// 15. Start the application
+// 16. Start application
 app.Run();
