@@ -1,155 +1,68 @@
+
+using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using RaithuNestham.Data;
-using Microsoft.OpenApi;
-using RaithuNestham.Middleware;
-using RaithuNestham.Repositories;
-using RaithuNestham.Repositories.Interfaces;
 using RaithuNestham.Services;
-using RaithuNestham.Services.Interfaces;
-using System.Text;
+using RaithuNestham.Services.RAG;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// 1. Controllers
 builder.Services.AddControllers();
-builder.Services.AddHttpClient();
 
+// 2. SQL Server database
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// ===============================
-// JWT CONFIGURATION
-// ===============================
+// 3. HTTP client for external APIs
+builder.Services.AddHttpClient();
 
+// 4. RAG services
+builder.Services.AddScoped<KnowledgeDocumentService>();
+builder.Services.AddScoped<EmbeddingService>();
+builder.Services.AddScoped<RagRetrievalService>();
+
+// 5. JWT authentication
 var jwtKey = builder.Configuration["Jwt:Key"];
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 var jwtAudience = builder.Configuration["Jwt:Audience"];
 
-if (string.IsNullOrWhiteSpace(jwtKey))
+if (string.IsNullOrWhiteSpace(jwtKey) ||
+    string.IsNullOrWhiteSpace(jwtIssuer) ||
+    string.IsNullOrWhiteSpace(jwtAudience))
 {
     throw new InvalidOperationException(
-        "JWT Key is not configured.");
+        "JWT configuration is missing. Check Jwt:Key, Jwt:Issuer, and Jwt:Audience.");
 }
 
-if (string.IsNullOrWhiteSpace(jwtIssuer))
-{
-    throw new InvalidOperationException(
-        "JWT Issuer is not configured.");
-}
-
-if (string.IsNullOrWhiteSpace(jwtAudience))
-{
-    throw new InvalidOperationException(
-        "JWT Audience is not configured.");
-}
-
-builder.Services.AddAuthentication(
-    JwtBearerDefaults.AuthenticationScheme)
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.TokenValidationParameters =
-            new TokenValidationParameters
-            {
-                ValidateIssuerSigningKey = true,
-
-                IssuerSigningKey =
-                    new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(jwtKey)),
-
-                ValidateIssuer = true,
-                ValidIssuer = jwtIssuer,
-
-                ValidateAudience = true,
-                ValidAudience = jwtAudience,
-
-                ValidateLifetime = true,
-
-                ClockSkew = TimeSpan.Zero
-            };
-
-        // ===============================
-        // JWT DIAGNOSTIC LOGGING
-        // ===============================
-
-        options.Events = new JwtBearerEvents
+        options.TokenValidationParameters = new TokenValidationParameters
         {
-            OnAuthenticationFailed = context =>
-            {
-                Console.WriteLine(
-                    "======================================");
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwtKey)),
 
-                Console.WriteLine(
-                    "JWT AUTHENTICATION FAILED");
+            ValidateIssuer = true,
+            ValidIssuer = jwtIssuer,
 
-                Console.WriteLine(
-                    context.Exception.Message);
+            ValidateAudience = true,
+            ValidAudience = jwtAudience,
 
-                Console.WriteLine(
-                    "======================================");
-
-                return Task.CompletedTask;
-            },
-
-            OnTokenValidated = context =>
-            {
-                Console.WriteLine(
-                    "======================================");
-
-                Console.WriteLine(
-                    "JWT TOKEN VALIDATED SUCCESSFULLY");
-
-                Console.WriteLine(
-                    "======================================");
-
-                return Task.CompletedTask;
-            },
-
-            OnChallenge = context =>
-            {
-                Console.WriteLine(
-                    "======================================");
-
-                Console.WriteLine(
-                    "JWT CHALLENGE");
-
-                Console.WriteLine(
-                    $"Error: {context.Error}");
-
-                Console.WriteLine(
-                    $"Description: {context.ErrorDescription}");
-
-                Console.WriteLine(
-                    "======================================");
-
-                return Task.CompletedTask;
-            }
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromMinutes(1)
         };
     });
 
 builder.Services.AddAuthorization();
 
-// ===============================
-// DEPENDENCY INJECTION
-// ===============================
-
-builder.Services.AddScoped(
-    typeof(IRepository<>),
-    typeof(Repository<>));
-
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-
-builder.Services.AddScoped<IJwtService, JwtService>();
-
-builder.Services.AddScoped<IAuthService, AuthService>();
-
-builder.Services.AddScoped<IAIService, AIService>();
-
-// ===============================
-// CORS
-// ===============================
-
+// 6. CORS for Angular frontend
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AngularPolicy", policy =>
@@ -157,16 +70,16 @@ builder.Services.AddCors(options =>
         policy
             .WithOrigins(
                 "http://localhost:4200",
-                "https://raithunestham.com")
+                "http://localhost:8080",
+                "https://raithunestham.com",
+                "https://www.raithunestham.com"
+            )
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
 });
 
-// ===============================
-// SWAGGER
-// ===============================
-
+// 7. Swagger
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(options =>
@@ -177,63 +90,150 @@ builder.Services.AddSwaggerGen(options =>
         Version = "v1"
     });
 
-    options.AddSecurityDefinition(
-        "Bearer",
-        new OpenApiSecurityScheme
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Enter your JWT token."
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
         {
-            Name = "Authorization",
-
-            Type = SecuritySchemeType.Http,
-
-            Scheme = "bearer",
-
-            BearerFormat = "JWT",
-
-            In = ParameterLocation.Header,
-
-            Description =
-                "Enter your JWT token. Example: Bearer {your token}"
-        });
-
-    options.AddSecurityRequirement(document =>
-        new OpenApiSecurityRequirement
-        {
-            [new OpenApiSecuritySchemeReference(
-                "Bearer",
-                document)] =
-                new List<string>()
-        });
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
 });
 
-// ===============================
-// BUILD APPLICATION
-// ===============================
-
+// 8. Build application
 var app = builder.Build();
 
-// ===============================
-// MIDDLEWARE
-// ===============================
-
-app.UseCors("AngularPolicy");
-
-app.UseMiddleware<ExceptionMiddleware>();
-
+// 9. Swagger only in Development
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseHttpsRedirection();
-}
+// 10. Middleware pipeline
+app.UseCors("AngularPolicy");
 
 app.UseAuthentication();
-
 app.UseAuthorization();
 
+// 11. Controller routes
 app.MapControllers();
 
+// 12. RAG development test endpoints
+if (app.Environment.IsDevelopment())
+{
+    // Test loading knowledge chunks
+    app.MapGet("/api/rag/test-chunks",
+        async (KnowledgeDocumentService service) =>
+        {
+            var chunks = await service.LoadChunksAsync();
+
+            return Results.Ok(new
+            {
+                Count = chunks.Count,
+                Chunks = chunks
+            });
+        })
+        .WithTags("RAG Development Tests");
+
+    // Test embedding generation
+    app.MapGet("/api/rag/test-embedding",
+        async (string text, EmbeddingService service) =>
+        {
+            var vector = await service.CreateEmbeddingAsync(text);
+
+            return Results.Ok(new
+            {
+                Success = vector.Count > 0,
+                VectorLength = vector.Count,
+                SampleValues = vector.Take(5)
+            });
+        })
+        .WithTags("RAG Development Tests");
+
+    // Test retrieving the three most relevant chunks
+    app.MapGet("/api/rag/test-retrieval",
+        async (string question, RagRetrievalService service) =>
+        {
+            var chunks =
+                await service.RetrieveRelevantChunksAsync(question, 3);
+
+            return Results.Ok(new
+            {
+                Question = question,
+                RetrievedCount = chunks.Count,
+                Chunks = chunks
+            });
+        })
+        .WithTags("RAG Development Tests");
+
+    // Test retrieval similarity scores
+    app.MapGet("/api/rag/test-retrieval-scores",
+        async (string question, RagRetrievalService service) =>
+        {
+            var results =
+                await service.RetrieveScoredChunksAsync(question, 6);
+
+            return Results.Ok(new
+            {
+                Question = question,
+                RetrievedCount = results.Count,
+                Results = results.Select(result => new
+                {
+                    result.Score,
+                    result.Chunk
+                })
+            });
+        })
+        .WithTags("RAG Development Tests");
+
+    // Test minimum similarity threshold
+    app.MapGet("/api/rag/test-retrieval-threshold",
+        async (
+            string question,
+            double minimumScore,
+            RagRetrievalService service) =>
+        {
+            if (minimumScore < -1 || minimumScore > 1)
+            {
+                return Results.BadRequest(new
+                {
+                    Message = "minimumScore must be between -1 and 1."
+                });
+            }
+
+            var chunks =
+                await service.RetrieveRelevantChunksWithThresholdAsync(
+                    question,
+                    topK: 3,
+                    minimumScore: minimumScore);
+
+            return Results.Ok(new
+            {
+                Question = question,
+                MinimumScore = minimumScore,
+                RetrievedCount = chunks.Count,
+                Chunks = chunks
+            });
+        })
+        .WithTags("RAG Development Tests");
+}
+
+// 13. Start application
 app.Run();
