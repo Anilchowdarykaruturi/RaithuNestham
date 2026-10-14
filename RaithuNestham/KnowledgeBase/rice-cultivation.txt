@@ -1,0 +1,101 @@
+RAITHUNESTHAM AGRICULTURAL KNOWLEDGE BASE
+
+Document ID: RICE-001
+Topic: Rice Cultivation
+Region: Andhra Pradesh, India
+Language: English
+Document type: Agricultural guidance
+Source authority: Indian Council of Agricultural Research (ICAR)
+
+1. INTRODUCTION
+
+Rice, known as paddy or Nellu in Telugu, is an important crop in Andhra Pradesh. Successful cultivation depends on suitable varieties, healthy soil, appropriate nutrient management, water availability, and monitoring for pests and diseases.
+
+2. SOIL PREPARATION
+
+Prepare the field according to the soil type, water availability, planting method, and local agricultural recommendations.
+
+Where appropriate, incorporate well-decomposed farmyard manure or compost during land preparation.
+
+A soil test helps identify nutrient deficiencies and supports balanced fertilizer application.
+
+3. FERTILIZER MANAGEMENT
+
+Rice requires nutrients including nitrogen, phosphorus, and potassium.
+
+Common fertilizer products include:
+- Urea: a source of nitrogen.
+- DAP: a source of nitrogen and phosphorus.
+- MOP or potash fertilizer: a source of potassium.
+- Well-decomposed farmyard manure and compost: organic nutrient sources.
+
+The appropriate fertilizer type, quantity, and application timing depend on soil-test results, crop variety, season, planting method, crop growth stage, and local recommendations.
+
+Avoid prescribing a universal fertilizer dose for every rice field.
+
+For Andhra Pradesh, ICAR's Kharif agro-advisory recommends soil-test-based fertilizer application. It also describes applying phosphorus during final puddling and adjusting potash timing according to soil conditions.
+
+4. CROP GROWTH STAGES
+
+Important rice growth stages include:
+- Nursery establishment.
+- Transplanting or direct sowing.
+- Early crop establishment.
+- Active tillering.
+- Panicle initiation.
+- Flowering.
+- Grain filling and maturity.
+
+Nutrient and water requirements change during crop development. Advice should account for the farmer's current growth stage.
+
+5. WATER MANAGEMENT
+
+Water management depends on the planting method, soil, rainfall, irrigation availability, and crop stage.
+
+Avoid assuming that every rice field requires the same water depth or irrigation schedule.
+
+Where water is limited, farmers can seek locally validated water-saving cultivation practices from agricultural extension services.
+
+6. PEST AND DISEASE MONITORING
+
+Rice can be affected by pests and diseases, including gall midge, bacterial leaf blight, and sheath blight.
+
+Before recommending treatment, establish:
+- The crop and growth stage.
+- The observed symptoms.
+- The affected area and severity.
+- Whether the problem has been correctly identified.
+
+Do not recommend a chemical treatment solely from an unclear symptom description. Seek confirmation from a qualified agricultural extension worker when needed.
+
+7. SAFE AGRICULTURAL ADVICE
+
+Never invent fertilizer quantities, pesticide doses, product labels, or official recommendations.
+
+For fertilizer decisions, encourage soil testing and locally applicable agricultural guidance.
+
+For pesticides and other crop-treatment products, follow the registered product label, applicable safety requirements, and local agricultural recommendations.
+
+If the available information is insufficient, ask the farmer for the missing details or explain that a reliable recommendation cannot yet be made.
+
+8. QUESTIONS THIS DOCUMENT CAN HELP ANSWER
+
+- What nutrients does rice need?
+- What is the purpose of urea in rice cultivation?
+- What is DAP used for?
+- Why is soil testing important?
+- Which growth stages are important for rice?
+- What information is needed before recommending fertilizer?
+- What should a farmer do when rice plants show possible pest or disease symptoms?
+
+9. SOURCE REFERENCES
+
+Primary regional reference:
+ICAR — Andhra Pradesh agricultural information
+https://www.icar.gov.in/en/node/17257
+
+ICAR Kharif Agro-Advisories for Farmers, 2025:
+https://icar.gov.in/sites/default/files/Circulars/ICAR-En-Kharif-Agro-Advisories-for-Farmers-2025.pdf
+
+Document note:
+This is an introductory knowledge document for the RaithuNestham prototype. Verify crop-specific and time-sensitive recommendations against current official agricultural guidance before using them to advise farmers.
