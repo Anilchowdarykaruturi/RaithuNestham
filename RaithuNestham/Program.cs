@@ -4,8 +4,12 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+
 using RaithuNestham.Data;
+using RaithuNestham.Repositories;
+using RaithuNestham.Repositories.Interfaces;
 using RaithuNestham.Services;
+using RaithuNestham.Services.Interfaces;
 using RaithuNestham.Services.RAG;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,12 +25,17 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // 3. HTTP client for external APIs
 builder.Services.AddHttpClient();
 
-// 4. RAG services
+// 4. Authentication services
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IJwtService, JwtService>();
+
+// 5. RAG services
 builder.Services.AddScoped<KnowledgeDocumentService>();
 builder.Services.AddScoped<EmbeddingService>();
 builder.Services.AddScoped<RagRetrievalService>();
 
-// 5. JWT authentication
+// 6. JWT configuration
 var jwtKey = builder.Configuration["Jwt:Key"];
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 var jwtAudience = builder.Configuration["Jwt:Audience"];
@@ -39,6 +48,7 @@ if (string.IsNullOrWhiteSpace(jwtKey) ||
         "JWT configuration is missing. Check Jwt:Key, Jwt:Issuer, and Jwt:Audience.");
 }
 
+// 7. JWT authentication
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -62,7 +72,7 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
-// 6. CORS for Angular frontend
+// 8. CORS for Angular frontend
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AngularPolicy", policy =>
@@ -79,7 +89,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// 7. Swagger
+// 9. Swagger configuration
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(options =>
@@ -116,29 +126,29 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// 8. Build application
+// 10. Build application
 var app = builder.Build();
 
-// 9. Swagger only in Development
+// 11. Swagger in Development only
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// 10. Middleware pipeline
+// 12. Middleware pipeline
 app.UseCors("AngularPolicy");
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-// 11. Controller routes
+// 13. Map controller routes
 app.MapControllers();
 
-// 12. RAG development test endpoints
+// 14. RAG development test endpoints
 if (app.Environment.IsDevelopment())
 {
-    // Test loading knowledge chunks
+    // Test 1: Load knowledge chunks
     app.MapGet("/api/rag/test-chunks",
         async (KnowledgeDocumentService service) =>
         {
@@ -152,7 +162,7 @@ if (app.Environment.IsDevelopment())
         })
         .WithTags("RAG Development Tests");
 
-    // Test embedding generation
+    // Test 2: Generate an embedding
     app.MapGet("/api/rag/test-embedding",
         async (string text, EmbeddingService service) =>
         {
@@ -167,7 +177,7 @@ if (app.Environment.IsDevelopment())
         })
         .WithTags("RAG Development Tests");
 
-    // Test retrieving the three most relevant chunks
+    // Test 3: Retrieve the three most relevant chunks
     app.MapGet("/api/rag/test-retrieval",
         async (string question, RagRetrievalService service) =>
         {
@@ -183,7 +193,7 @@ if (app.Environment.IsDevelopment())
         })
         .WithTags("RAG Development Tests");
 
-    // Test retrieval similarity scores
+    // Test 4: Retrieve chunks with similarity scores
     app.MapGet("/api/rag/test-retrieval-scores",
         async (string question, RagRetrievalService service) =>
         {
@@ -203,7 +213,7 @@ if (app.Environment.IsDevelopment())
         })
         .WithTags("RAG Development Tests");
 
-    // Test minimum similarity threshold
+    // Test 5: Retrieve chunks using a minimum similarity score
     app.MapGet("/api/rag/test-retrieval-threshold",
         async (
             string question,
@@ -235,5 +245,5 @@ if (app.Environment.IsDevelopment())
         .WithTags("RAG Development Tests");
 }
 
-// 13. Start application
+// 15. Start the application
 app.Run();
