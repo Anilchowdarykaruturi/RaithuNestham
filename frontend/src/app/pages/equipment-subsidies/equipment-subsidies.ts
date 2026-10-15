@@ -1,4 +1,11 @@
-import { Component, OnInit, inject } from '@angular/core';
+
+import {
+  Component,
+  OnInit,
+  ChangeDetectorRef,
+  inject
+} from '@angular/core';
+
 import { CommonModule } from '@angular/common';
 
 import {
@@ -19,6 +26,8 @@ export class EquipmentSubsidiesComponent implements OnInit {
     EquipmentSubsidyService
   );
 
+  private cdr = inject(ChangeDetectorRef);
+
   subsidies: EquipmentSubsidy[] = [];
 
   loading = false;
@@ -26,54 +35,87 @@ export class EquipmentSubsidiesComponent implements OnInit {
   errorMessage = '';
 
   ngOnInit(): void {
-
-    
-
+    console.log('EQUIPMENT SUBSIDIES COMPONENT STARTED');
     this.loadSubsidies();
   }
 
   loadSubsidies(): void {
 
-    // Prevent duplicate API requests
     if (this.loading) {
+      console.log('Already loading equipment subsidies');
       return;
     }
 
-   
+    console.log('loadSubsidies() called');
 
     this.loading = true;
-
     this.errorMessage = '';
+
+    console.log('Equipment subsidies loading = TRUE');
+
+    this.cdr.detectChanges();
 
     this.equipmentSubsidyService
       .getEquipmentSubsidies()
       .subscribe({
 
-        next: (data: EquipmentSubsidy[]) => {
+        next: (data: EquipmentSubsidy[] | null) => {
 
-                 
+          console.log(
+            'EQUIPMENT SUBSIDIES API RESPONSE:',
+            data
+          );
 
-          this.subsidies = data;
+          console.log(
+            'EQUIPMENT SUBSIDIES COUNT:',
+            data?.length ?? 0
+          );
+
+          this.subsidies = Array.isArray(data)
+            ? data
+            : [];
 
           this.loading = false;
 
-          
-      
+          console.log(
+            'EQUIPMENT SUBSIDIES LOADING:',
+            this.loading
+          );
+
+          this.cdr.detectChanges();
         },
 
         error: (error: any) => {
 
           console.error(
-            'Equipment subsidies error:',
+            'EQUIPMENT SUBSIDIES API ERROR:',
             error
           );
 
           this.errorMessage =
             error?.userMessage ||
             error?.error?.message ||
-            'Unable to load equipment subsidies.';
+            'Unable to load equipment subsidies. Please try again.';
 
           this.loading = false;
+
+          console.log(
+            'EQUIPMENT SUBSIDIES LOADING:',
+            this.loading
+          );
+
+          this.cdr.detectChanges();
+        },
+
+        complete: () => {
+
+          console.log(
+            'Equipment subsidies request completed'
+          );
+
+          this.loading = false;
+
+          this.cdr.detectChanges();
         }
 
       });

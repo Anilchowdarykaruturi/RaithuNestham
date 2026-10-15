@@ -13,12 +13,13 @@ export class ApiService {
 
   private baseUrl = environment.apiUrl;
 
-  get<T>(endpoint: string): Observable<T> {
-    return this.http.get<T>(
-      `${this.baseUrl}/${endpoint}`
-    );
-  }
+ get<T>(endpoint: string): Observable<T> {
+  const url = `${this.baseUrl}/${endpoint}`;
 
+  console.log('API REQUEST URL:', url);
+
+  return this.http.get<T>(url);
+}
   post<T>(endpoint: string, data: unknown): Observable<T> {
     return this.http.post<T>(
       `${this.baseUrl}/${endpoint}`,

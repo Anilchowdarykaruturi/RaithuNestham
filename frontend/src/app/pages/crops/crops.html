@@ -6,50 +6,55 @@
     View crops available for farmers
   </p>
 
-  <div *ngIf="loading" class="message">
-  🌾 Loading crops...
-</div>
+  @if (loading) {
+    <div class="message">
+      🌾 Loading crops...
+    </div>
+  }
 
-  <div *ngIf="errorMessage" class="error">
-    {{ errorMessage }}
-  </div>
+  @if (!loading && errorMessage) {
+    <div class="error">
+      {{ errorMessage }}
+    </div>
+  }
 
-  <div
-    *ngIf="!loading && !errorMessage && crops.length === 0"
-    class="no-data"
-  >
-    No crops found.
-  </div>
+  @if (!loading && !errorMessage && crops.length === 0) {
+    <div class="no-data">
+      No crops found.
+    </div>
+  }
 
-  <div
-    class="crop-grid"
-    *ngIf="!loading && crops.length > 0"
-  >
+  @if (!loading && !errorMessage && crops.length > 0) {
 
-    <div
-      class="crop-card"
-      *ngFor="let crop of crops"
-    >
+    <div class="crop-grid">
 
-      <h2>{{ crop.name }}</h2>
+      @for (crop of crops; track crop.id) {
 
-      <p>
-        <strong>Telugu Name:</strong>
-        {{ crop.teluguName }}
-      </p>
+        <div class="crop-card">
 
-      <p>
-        <strong>Season:</strong>
-        {{ crop.season }}
-      </p>
+          <h2>🌱 {{ crop.name }}</h2>
 
-      <p>
-        <strong>Description:</strong>
-        {{ crop.description }}
-      </p>
+          <p>
+            <strong>Telugu Name:</strong>
+            {{ crop.teluguName }}
+          </p>
+
+          <p>
+            <strong>Season:</strong>
+            {{ crop.season }}
+          </p>
+
+          <p>
+            <strong>Description:</strong>
+            {{ crop.description }}
+          </p>
+
+        </div>
+
+      }
 
     </div>
 
-  </div>
+  }
 
 </div>

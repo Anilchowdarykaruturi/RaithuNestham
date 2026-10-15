@@ -1,55 +1,43 @@
+
 <div class="fertilizers-page">
 
   <h1>🌱 Fertilizers</h1>
-
   <p>Fertilizer information for farmers</p>
 
-  <p *ngIf="loading" class="message">
-  🌱 Loading fertilizers...
-</p>
+  @if (loading) {
+    <p class="message">🌱 Loading fertilizers...</p>
+  } @else if (errorMessage) {
+    <p class="error">{{ errorMessage }}</p>
+  } @else if (fertilizers.length === 0) {
+    <p class="message">No fertilizers found.</p>
+  } @else {
+    <div class="fertilizer-grid">
+      @for (fertilizer of fertilizers; track fertilizer.id) {
+        <div class="fertilizer-card">
+          <h2>{{ fertilizer.name }}</h2>
 
-  <p *ngIf="errorMessage" class="error">
-    {{ errorMessage }}
-  </p>
+          <p>
+            <strong>Type:</strong>
+            {{ fertilizer.type }}
+          </p>
 
-  <p *ngIf="!loading && fertilizers.length === 0">
-    No fertilizers found.
-  </p>
+          <p>
+            <strong>Recommended For:</strong>
+            {{ fertilizer.recommendedFor }}
+          </p>
 
-  <div
-    class="fertilizer-grid"
-    *ngIf="!loading && fertilizers.length > 0"
-  >
+          <p>
+            <strong>Usage:</strong>
+            {{ fertilizer.usageInstructions }}
+          </p>
 
-    <div
-      class="fertilizer-card"
-      *ngFor="let fertilizer of fertilizers"
-    >
-
-      <h2>{{ fertilizer.name }}</h2>
-
-      <p>
-        <strong>Type:</strong>
-        {{ fertilizer.type }}
-      </p>
-
-      <p>
-        <strong>Recommended For:</strong>
-        {{ fertilizer.recommendedFor }}
-      </p>
-
-      <p>
-        <strong>Usage:</strong>
-        {{ fertilizer.usageInstructions }}
-      </p>
-
-      <p>
-        <strong>Organic:</strong>
-        {{ fertilizer.isOrganic ? 'Yes 🌿' : 'No' }}
-      </p>
-
+          <p>
+            <strong>Organic:</strong>
+            {{ fertilizer.isOrganic ? 'Yes 🌿' : 'No' }}
+          </p>
+        </div>
+      }
     </div>
-
-  </div>
+  }
 
 </div>

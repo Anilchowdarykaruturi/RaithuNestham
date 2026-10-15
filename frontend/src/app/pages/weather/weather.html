@@ -6,87 +6,85 @@
   </div>
 
   <div class="search-box">
-
     <input
       type="text"
       [(ngModel)]="village"
       placeholder="Enter village name"
     />
 
-   <button
-  type="button"
-  (click)="loadWeather()"
-  [disabled]="loading"
->
-  @if (loading) {
-    Loading...
-  } @else {
-    🔍 Search
-  }
-</button>
-
-  </div>
-
-  <div *ngIf="loading" class="message">
-    Loading weather...
-  </div>
-
-  <div *ngIf="errorMessage" class="error">
-    {{ errorMessage }}
-  </div>
-
-  <div
-    *ngIf="!loading && !errorMessage && weather.length === 0"
-    class="message"
-  >
-    No weather information found.
-  </div>
-
-  <div
-    class="weather-grid"
-    *ngIf="!loading && weather.length > 0"
-  >
-
-    <div
-      class="weather-card"
-      *ngFor="let item of weather"
+    <button
+      type="button"
+      (click)="loadWeather()"
+      [disabled]="loading"
     >
+      {{ loading ? 'Loading...' : '🔍 Search' }}
+    </button>
+  </div>
 
-      <h2>📍 {{ item.village }}</h2>
+  @if (loading) {
 
-      <div class="condition">
-        🌤️ {{ item.weatherCondition }}
-      </div>
+    <div class="message">
+      Loading weather...
+    </div>
 
-      <div class="weather-info">
+  } @else if (errorMessage) {
 
-        <div>
-          <span>🌡️</span>
-          <strong>Temperature</strong>
-          <p>{{ item.temperature }} °C</p>
+    <div class="error">
+      {{ errorMessage }}
+    </div>
+
+  } @else if (weather.length === 0) {
+
+    <div class="message">
+      No weather information found.
+    </div>
+
+  } @else {
+
+    <div class="weather-grid">
+
+      @for (item of weather; track item.id) {
+
+        <div class="weather-card">
+
+          <h2>📍 {{ item.village }}</h2>
+
+          <div class="condition">
+            🌤️ {{ item.weatherCondition }}
+          </div>
+
+          <div class="weather-info">
+
+            <div>
+              <span>🌡️</span>
+              <strong>Temperature</strong>
+              <p>{{ item.temperature }} °C</p>
+            </div>
+
+            <div>
+              <span>💧</span>
+              <strong>Humidity</strong>
+              <p>{{ item.humidity }} %</p>
+            </div>
+
+            <div>
+              <span>🌧️</span>
+              <strong>Rainfall</strong>
+              <p>{{ item.rainfall }} mm</p>
+            </div>
+
+          </div>
+
+          <p class="recorded">
+            Updated: {{ item.recordedAt | date:'medium' }}
+          </p>
+
         </div>
 
-        <div>
-          <span>💧</span>
-          <strong>Humidity</strong>
-          <p>{{ item.humidity }} %</p>
-        </div>
-
-        <div>
-          <span>🌧️</span>
-          <strong>Rainfall</strong>
-          <p>{{ item.rainfall }} mm</p>
-        </div>
-
-      </div>
-
-      <p class="recorded">
-        Updated:
-        {{ item.recordedAt | date:'medium' }}
-      </p>
+      }
 
     </div>
 
-  </div>
+  }
 
 </div>

@@ -3,79 +3,78 @@
   <h1>🏛️ Government Schemes</h1>
 
   <p class="subtitle">
-    Government schemes and benefits for farmers
+    Government schemes and benefits available for farmers
   </p>
 
-  <!-- Loading -->
- <p *ngIf="loading" class="message">
-  🏛️ Loading government schemes...
-</p>
+  @if (loading) {
 
-  <!-- Error -->
-  <p *ngIf="errorMessage" class="error">
-    {{ errorMessage }}
-  </p>
+    <p class="message">
+      🏛️ Loading government schemes...
+    </p>
 
-  <!-- No Data -->
-  <p
-    *ngIf="
-      !loading &&
-      schemes.length === 0 &&
-      !errorMessage
-    "
-  >
-    No government schemes found.
-  </p>
+  } @else if (errorMessage) {
 
-  <!-- Government Scheme Cards -->
-  <div
-    class="scheme-grid"
-    *ngIf="
-      !loading &&
-      schemes.length > 0
-    "
-  >
+    <p class="error">
+      {{ errorMessage }}
+    </p>
 
-    <div
-      class="scheme-card"
-      *ngFor="let scheme of schemes"
-    >
+  } @else if (schemes.length === 0) {
 
-      <h2>
-        {{ scheme.name }}
-      </h2>
+    <p class="message">
+      No government schemes found.
+    </p>
 
-      <p>
-        <strong>Description:</strong>
-        {{ scheme.description }}
-      </p>
+  } @else {
 
-      <p>
-        <strong>Eligibility:</strong>
-        {{ scheme.eligibility }}
-      </p>
+    <div class="scheme-grid">
 
-      <p>
-        <strong>Benefits:</strong>
-        {{ scheme.benefits }}
-      </p>
+      @for (scheme of schemes; track scheme.id) {
 
-      <p>
-        <strong>Application:</strong>
-        {{ scheme.applicationProcess }}
-      </p>
+        <div class="scheme-card">
 
-      <a
-        *ngIf="scheme.officialWebsite"
-        [href]="scheme.officialWebsite"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Official Website →
-      </a>
+          <h2>🏛️ {{ scheme.name }}</h2>
+
+          <p>
+            <strong>Description:</strong>
+            {{ scheme.description }}
+          </p>
+
+          <p>
+            <strong>Eligibility:</strong>
+            {{ scheme.eligibility }}
+          </p>
+
+          <p>
+            <strong>Benefits:</strong>
+            {{ scheme.benefits }}
+          </p>
+
+          <p>
+            <strong>Application Process:</strong>
+            {{ scheme.applicationProcess }}
+          </p>
+
+          @if (scheme.officialWebsite) {
+
+            <p>
+              <strong>Official Website:</strong>
+              <a
+                [href]="scheme.officialWebsite"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Visit Website
+              </a>
+            </p>
+
+          }
+
+        </div>
+
+      }
 
     </div>
 
-  </div>
+  }
 
 </div>

@@ -1,5 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+
+import {
+  Component,
+  OnInit,
+  ChangeDetectorRef
+} from '@angular/core';
+
 import { CommonModule } from '@angular/common';
+
 import {
   FertilizerService,
   Fertilizer
@@ -15,47 +22,44 @@ import {
 export class Fertilizers implements OnInit {
 
   fertilizers: Fertilizer[] = [];
-
   loading = false;
-
   errorMessage = '';
 
   constructor(
-    private fertilizerService: FertilizerService
+    private fertilizerService: FertilizerService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
+    console.log('FERTILIZERS COMPONENT STARTED');
     this.loadFertilizers();
   }
 
   loadFertilizers(): void {
-
-    // Prevent duplicate API requests
     if (this.loading) {
       return;
     }
 
     this.loading = true;
-
     this.errorMessage = '';
 
+    console.log('CALLING FERTILIZERS API');
+
     this.fertilizerService.getFertilizers().subscribe({
-
       next: (response: Fertilizer[]) => {
+        console.log('FERTILIZERS RECEIVED:', response.length);
 
-        
-
-        this.fertilizers = response;
-
+        this.fertilizers = response ?? [];
         this.loading = false;
+
+        this.cdr.detectChanges();
+
+        console.log('LOADING AFTER RESPONSE:', this.loading);
+        console.log('FERTILIZER COUNT:', this.fertilizers.length);
       },
 
       error: (error: any) => {
-
-        console.error(
-          'Fertilizers API error:',
-          error
-        );
+        console.error('FERTILIZERS API ERROR:', error);
 
         this.errorMessage =
           error?.userMessage ||
@@ -63,8 +67,18 @@ export class Fertilizers implements OnInit {
           'Unable to load fertilizers information.';
 
         this.loading = false;
-      }
 
+        this.cdr.detectChanges();
+
+        console.log('LOADING AFTER ERROR:', this.loading);
+      },
+
+      complete: () => {
+        this.loading = false;
+        this.cdr.detectChanges();
+
+        console.log('FERTILIZERS REQUEST COMPLETED');
+      }
     });
   }
 }

@@ -1,4 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+
+import {
+  Component,
+  OnInit,
+  ChangeDetectorRef
+} from '@angular/core';
+
 import { CommonModule } from '@angular/common';
 
 import {
@@ -16,33 +22,24 @@ import {
 export class GovernmentSchemes implements OnInit {
 
   schemes: GovernmentScheme[] = [];
-
   loading = false;
-
   errorMessage = '';
 
   constructor(
-    private governmentSchemeService: GovernmentSchemeService
+    private governmentSchemeService: GovernmentSchemeService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
-
-    
-
     this.loadGovernmentSchemes();
   }
 
   loadGovernmentSchemes(): void {
-
-    // Prevent duplicate API requests
     if (this.loading) {
       return;
     }
 
-   
-
     this.loading = true;
-
     this.errorMessage = '';
 
     this.governmentSchemeService
@@ -50,23 +47,14 @@ export class GovernmentSchemes implements OnInit {
       .subscribe({
 
         next: (response: GovernmentScheme[]) => {
-
-         
-
-          this.schemes = response;
-
-          
+          this.schemes = response ?? [];
           this.loading = false;
 
-          
+          this.cdr.detectChanges();
         },
 
         error: (error: any) => {
-
-          console.error(
-            'Government schemes API error:',
-            error
-          );
+          console.error('Government schemes API error:', error);
 
           this.errorMessage =
             error?.userMessage ||
@@ -74,6 +62,13 @@ export class GovernmentSchemes implements OnInit {
             'Unable to load government schemes.';
 
           this.loading = false;
+
+          this.cdr.detectChanges();
+        },
+
+        complete: () => {
+          this.loading = false;
+          this.cdr.detectChanges();
         }
 
       });

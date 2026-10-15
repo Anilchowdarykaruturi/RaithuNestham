@@ -17,41 +17,39 @@ export class Weather implements OnInit {
   loading = false;
   errorMessage = '';
 
-  constructor(
-    private weatherService: WeatherService
-  ) {}
+  constructor(private weatherService: WeatherService) {}
 
   ngOnInit(): void {
+    console.log('WEATHER COMPONENT STARTED');
     this.loadWeather();
   }
 
   loadWeather(): void {
 
-    // Prevent duplicate API requests
+    console.log('loadWeather() called');
+
     if (this.loading) {
+      console.log('Already loading - stopping duplicate request');
       return;
     }
 
     this.loading = true;
     this.errorMessage = '';
 
+    console.log('Loading = TRUE');
+
     this.weatherService.getWeather(this.village).subscribe({
-
       next: (response) => {
-
-       
+        console.log('Weather response:', response);
 
         this.weather = response;
-
         this.loading = false;
+
+        console.log('Loading = FALSE');
       },
 
       error: (error) => {
-
-        console.error(
-          'Weather API error:',
-          error
-        );
+        console.error('Weather API error:', error);
 
         this.errorMessage =
           error?.userMessage ||
@@ -59,8 +57,14 @@ export class Weather implements OnInit {
           'Unable to load weather information.';
 
         this.loading = false;
-      }
 
+        console.log('Loading = FALSE because of ERROR');
+      },
+
+      complete: () => {
+        console.log('Weather request completed');
+        this.loading = false;
+      }
     });
   }
 }

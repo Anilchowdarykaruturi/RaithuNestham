@@ -1,9 +1,7 @@
-```html
+
 <div class="dashboard">
 
-  <!-- Header -->
   <header class="dashboard-header">
-
     <div>
       <h1>🌾 Welcome to RaithuNestham</h1>
       <p>రైతు అన్నా నీకు తోడుగా</p>
@@ -15,179 +13,114 @@
       (click)="logout()">
       Logout
     </button>
-
   </header>
 
-
-  <!-- Main Content -->
   <main class="dashboard-content">
 
-    <!-- Intro -->
-    <div class="dashboard-intro">
-
+    <section class="dashboard-intro">
       <h2>Smart Farming Assistant</h2>
+      <p>Everything you need to make better farming decisions.</p>
+    </section>
 
-      <p>
-        Everything you need to make better farming decisions.
-      </p>
-
-    </div>
-
-
-    <!-- Feature Cards -->
-    <div class="dashboard-cards">
-
+    <section class="dashboard-cards">
 
       <!-- Weather -->
-      <div class="card">
-
-        <div class="icon">🌤️</div>
-
-        <h2>Weather</h2>
-
-        <p>
-          Check current weather conditions and
-          rainfall information for your village.
-        </p>
-
-        <a
-          routerLink="/weather"
-          class="card-button">
-          View Weather
-        </a>
-
-      </div>
-
+      <article class="card">
+        <img src="/images/weather.jpg"
+             alt="Rain over agricultural fields"
+             class="card-image">
+        <div class="card-body">
+          <h2>🌦️ Weather</h2>
+          <p>Get weather updates, forecasts and rainfall information for your village.</p>
+          <a routerLink="/weather" class="card-button">View Details →</a>
+        </div>
+      </article>
 
       <!-- Crops -->
-      <div class="card">
-
-        <div class="icon">🌱</div>
-
-        <h2>Crops</h2>
-
-        <p>
-          Explore crop information, seasons,
-          and farming recommendations.
-        </p>
-
-        <a
-          routerLink="/crops"
-          class="card-button">
-          View Crops
-        </a>
-
-      </div>
-
+      <article class="card">
+        <img src="/images/crop.jpg"
+             alt="Farmer working in a green paddy field"
+             class="card-image">
+        <div class="card-body">
+          <h2>🌾 Crops</h2>
+          <p>Explore crop varieties, cultivation methods, seasons and crop management.</p>
+          <a routerLink="/crops" class="card-button">View Details →</a>
+        </div>
+      </article>
 
       <!-- Fertilizers -->
-      <div class="card">
-
-        <div class="icon">💊</div>
-
-        <h2>Fertilizers</h2>
-
-        <p>
-          Find fertilizer information and
-          recommended usage for crops.
-        </p>
-
-        <a
-          routerLink="/fertilizers"
-          class="card-button">
-          View Fertilizers
-        </a>
-
-      </div>
-
+      <article class="card">
+        <img src="/images/Fertilizers.webp"
+             alt="Fertilizer application in a farm"
+             class="card-image">
+        <div class="card-body">
+          <h2>🧪 Fertilizers</h2>
+          <p>Learn about fertilizer types, application and recommended usage.</p>
+          <a routerLink="/fertilizers" class="card-button">View Details →</a>
+        </div>
+      </article>
 
       <!-- Pesticides -->
-      <div class="card">
-
-        <div class="icon">🦠</div>
-
-        <h2>Pesticides</h2>
-
-        <p>
-          Learn about pesticides, target pests,
-          and recommended crops.
-        </p>
-
-        <a
-          routerLink="/pesticides"
-          class="card-button">
-          View Pesticides
-        </a>
-
-      </div>
-
-
-      <!-- Government Schemes -->
-      <div class="card">
-
-        <div class="icon">🏛️</div>
-
-        <h2>Government Schemes</h2>
-
-        <p>
-          Explore government schemes,
-          benefits, and eligibility information.
-        </p>
-
-        <a
-          routerLink="/government-schemes"
-          class="card-button">
-          View Schemes
-        </a>
-
-      </div>
-
+      <article class="card">
+        <img src="/images/pesticides.jpg"
+             alt="Farmer applying crop protection products"
+             class="card-image">
+        <div class="card-body">
+          <h2>🌿 Pesticides</h2>
+          <p>Explore pest management information and crop protection methods.</p>
+          <a routerLink="/pesticides" class="card-button">View Details →</a>
+        </div>
+      </article>
 
       <!-- Equipment Subsidies -->
-      <div class="card">
+      <article class="card">
+        <img src="/images/equipment-subsidy.jpeg"
+             alt="Farmer operating agricultural machinery"
+             class="card-image">
+        <div class="card-body">
+          <h2>🚜 Equipment Subsidies</h2>
+          <p>Explore agricultural machinery and subsidy information for Andhra Pradesh.</p>
+          <a routerLink="/equipment-subsidies" class="card-button">View Details →</a>
+        </div>
+      </article>
 
-        <div class="icon">🚜</div>
+      <!-- Government Schemes -->
+      <article class="card">
+        <img src="/images/government-scheme.jpeg"
+             alt="Indian agricultural government scheme information"
+             class="card-image">
+        <div class="card-body">
+          <h2>🏛️ Government Schemes</h2>
+          <p>Discover farmer schemes, benefits and eligibility requirements.</p>
+          <a routerLink="/government-schemes" class="card-button">View Details →</a>
+        </div>
+      </article>
 
-        <h2>Equipment Subsidies</h2>
+      <!-- AI Chat -->
+      <article class="card">
+        <img src="/images/ai-farmer.jpg"
+             alt="Farmer using a mobile phone in a field"
+             class="card-image">
+        <div class="card-body">
+          <h2>🤖 AI Farmer Assistant</h2>
+          <p>Ask farming questions and get AI-powered agricultural guidance.</p>
+          <a routerLink="/ai-chat" class="card-button">View Details →</a>
+        </div>
+      </article>
 
-        <p>
-          Explore agricultural equipment
-          subsidies available for farmers.
-        </p>
+      <!-- Modern Farming -->
+      <article class="card">
+        <img src="/images/modern-farming.jpg"
+             alt="Modern rice transplanting machinery"
+             class="card-image">
+        <div class="card-body">
+          <h2>⚙️ Modern Farming</h2>
+          <p>Discover agricultural machinery, mechanization and modern farming practices.</p>
+          <a routerLink="/equipment-subsidies" class="card-button">View Details →</a>
+        </div>
+      </article>
 
-        <a
-          routerLink="/equipment-subsidies"
-          class="card-button">
-          View Equipment
-        </a>
-
-      </div>
-
-
-      <!-- AI Assistant -->
-      <div class="card">
-
-        <div class="icon">🤖</div>
-
-        <h2>AI Assistant</h2>
-
-        <p>
-          Ask farming questions and receive
-          AI-powered agricultural guidance.
-        </p>
-
-        <a
-          routerLink="/ai-chat"
-          class="card-button">
-          Ask AI
-        </a>
-
-      </div>
-
-
-    </div>
+    </section>
 
   </main>
-
 </div>
-```

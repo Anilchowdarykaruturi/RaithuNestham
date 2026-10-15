@@ -6,51 +6,55 @@
     Pesticide information for farmers
   </p>
 
-  <!-- Loading -->
-  <p *ngIf="loading" class="message">
-  🌿 Loading pesticides...
-</p>>
+  @if (loading) {
 
-  <!-- Error -->
-  <p *ngIf="errorMessage" class="error">
-    {{ errorMessage }}
-  </p>
+    <p class="message">
+      🌿 Loading pesticides...
+    </p>
 
-  <!-- No Data -->
-  <p *ngIf="!loading && pesticides.length === 0 && !errorMessage">
-    No pesticides found.
-  </p>
+  } @else if (errorMessage) {
 
-  <!-- Pesticide Cards -->
-  <div
-    class="pesticide-grid"
-    *ngIf="!loading && pesticides.length > 0"
-  >
+    <p class="error">
+      {{ errorMessage }}
+    </p>
 
-    <div
-      class="pesticide-card"
-      *ngFor="let pesticide of pesticides"
-    >
+  } @else if (pesticides.length === 0) {
 
-      <h2>{{ pesticide.name }}</h2>
+    <p class="message">
+      No pesticides found.
+    </p>
 
-      <p>
-        <strong>Target Pest:</strong>
-        {{ pesticide.targetPest }}
-      </p>
+  } @else {
 
-      <p>
-        <strong>Recommended Crop:</strong>
-        {{ pesticide.recommendedCrop }}
-      </p>
+    <div class="pesticide-grid">
 
-      <p>
-        <strong>Usage:</strong>
-        {{ pesticide.usageInstructions }}
-      </p>
+      @for (pesticide of pesticides; track pesticide.id) {
+
+        <div class="pesticide-card">
+
+          <h2>🌿 {{ pesticide.name }}</h2>
+
+          <p>
+            <strong>Target Pest:</strong>
+            {{ pesticide.targetPest }}
+          </p>
+
+          <p>
+            <strong>Recommended Crop:</strong>
+            {{ pesticide.recommendedCrop }}
+          </p>
+
+          <p>
+            <strong>Usage:</strong>
+            {{ pesticide.usageInstructions }}
+          </p>
+
+        </div>
+
+      }
 
     </div>
 
-  </div>
+  }
 
 </div>
