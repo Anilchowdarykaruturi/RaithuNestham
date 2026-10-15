@@ -78,7 +78,7 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
-// 9. CORS for Angular frontend
+// 9. CORS for local and deployed Angular frontends
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AngularPolicy", policy =>
@@ -88,7 +88,8 @@ builder.Services.AddCors(options =>
                 "http://localhost:4200",
                 "http://localhost:8080",
                 "https://raithunestham.com",
-                "https://www.raithunestham.com"
+                "https://www.raithunestham.com",
+                "https://raithunestham-1.onrender.com"
             )
             .AllowAnyHeader()
             .AllowAnyMethod();
@@ -144,6 +145,7 @@ if (app.Environment.IsDevelopment())
 }
 
 // 13. Middleware pipeline
+// CORS must run before authentication and authorization.
 app.UseCors("AngularPolicy");
 
 app.UseAuthentication();
@@ -153,6 +155,7 @@ app.UseAuthorization();
 app.MapControllers();
 
 // 15. RAG development test endpoints
+// These endpoints are not exposed in Production.
 if (app.Environment.IsDevelopment())
 {
     app.MapGet("/api/rag/test-chunks",
