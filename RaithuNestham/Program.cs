@@ -84,13 +84,17 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AngularPolicy", policy =>
     {
         policy
-            .WithOrigins(
-                "http://localhost:4200",
-                "http://localhost:8080",
-                "https://raithunestham.com",
-                "https://www.raithunestham.com",
-                "https://raithunestham-1.onrender.com"
-            )
+
+.WithOrigins(
+    "http://localhost:4200",
+    "http://localhost:8080",
+    "https://localhost",
+    "capacitor://localhost",
+    "https://raithunestham.com",
+    "https://www.raithunestham.com",
+    "https://raithunestham-1.onrender.com"
+)
+
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
