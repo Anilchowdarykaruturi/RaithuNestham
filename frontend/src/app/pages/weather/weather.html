@@ -1,90 +1,236 @@
+
 <div class="weather-page">
 
-  <div class="weather-header">
+  <header class="weather-header">
     <h1>🌾 RaithuNestham Weather</h1>
-    <p>Check the latest weather information for your village.</p>
-  </div>
+    <p>Current weather, seven-day forecasts, and Telugu farming advice.</p>
+  </header>
 
-  <div class="search-box">
-    <input
-      type="text"
-      [(ngModel)]="village"
-      placeholder="Enter village name"
-    />
+  <!-- Current weather -->
+  <section class="current-weather-section">
+    <h2>📍 Current Weather</h2>
 
-    <button
-      type="button"
-      (click)="loadWeather()"
-      [disabled]="loading"
-    >
-      {{ loading ? 'Loading...' : '🔍 Search' }}
-    </button>
-  </div>
+    <div class="search-box">
+      <input
+        type="text"
+        [(ngModel)]="village"
+        placeholder="Enter village name"
+        aria-label="Village name"
+        (keyup.enter)="loadWeather()"
+      />
 
-  @if (loading) {
-
-    <div class="message">
-      Loading weather...
+      <button
+        type="button"
+        (click)="loadWeather()"
+        [disabled]="loading"
+      >
+        {{ loading ? 'Loading...' : '🔍 Search' }}
+      </button>
     </div>
 
-  } @else if (errorMessage) {
+    @if (loading) {
+      <div class="message">Loading current weather...</div>
+    } @else if (errorMessage) {
+      <div class="error">{{ errorMessage }}</div>
+      <button type="button" (click)="loadWeather()">
+        Try again
+      </button>
+    } @else if (weather.length === 0) {
+      <div class="message">
+        No weather information found for this village.
+      </div>
+    } @else {
+      <div class="weather-grid">
+        @for (item of weather; track item.village) {
+          <article class="weather-card">
+            <h3>📍 {{ item.village }}</h3>
 
-    <div class="error">
-      {{ errorMessage }}
+            <div class="condition">
+              🌤️ {{ item.weatherCondition }}
+            </div>
+
+            <div class="weather-info">
+              <div class="weather-metric">
+                <span>🌡️</span>
+                <strong>Temperature</strong>
+                <p>{{ item.temperature }} °C</p>
+              </div>
+
+              <div class="weather-metric">
+                <span>💧</span>
+                <strong>Humidity</strong>
+                <p>{{ item.humidity }} %</p>
+              </div>
+
+              <div class="weather-metric">
+                <span>🌧️</span>
+                <strong>Rainfall</strong>
+                <p>{{ item.rainfall }} mm</p>
+              </div>
+            </div>
+
+            <p class="recorded">
+              Updated: {{ item.recordedAt | date:'medium' }}
+            </p>
+          </article>
+        }
+      </div>
+    }
+  </section>
+
+  <!-- Seven-day forecast -->
+  <section class="forecast-section">
+    <div class="section-heading">
+      <div>
+        <h2>📅 7-Day Weather Forecast</h2>
+        <p>Plan irrigation, spraying, and field activities.</p>
+      </div>
+
+      <button
+        type="button"
+        class="secondary-button"
+        (click)="loadForecast()"
+        [disabled]="forecastLoading"
+      >
+        {{ forecastLoading ? 'Loading...' : '↻ Refresh' }}
+      </button>
     </div>
 
-  } @else if (weather.length === 0) {
+    @if (forecastLoading) {
+      <div class="message">Loading seven-day forecast...</div>
+    } @else if (forecastError) {
+      <div class="error">{{ forecastError }}</div>
+      <button type="button" (click)="loadForecast()">
+        Try again
+      </button>
+    } @else if (forecast.length === 0) {
+      <div class="message">Forecast data is not available.</div>
+    } @else {
+      <div class="forecast-grid">
+        @for (day of forecast; track day.date) {
+          <article class="forecast-card">
+            <h3>{{ day.date | date:'EEE, MMM d' }}</h3>
 
-    <div class="message">
-      No weather information found.
+            <div class="forecast-icon">🌤️</div>
+
+            <div class="temperature-range">
+              <span class="max-temperature">
+                {{ day.maxTemperature | number:'1.0-1' }}°
+              </span>
+              <span class="min-temperature">
+                {{ day.minTemperature | number:'1.0-1' }}°C
+              </span>
+            </div>
+
+            <div class="forecast-detail">
+              <span>🌧️ Rain chance</span>
+              <strong>{{ day.rainProbability }}%</strong>
+            </div>
+
+            <div class="forecast-detail">
+              <span>💧 Rainfall</span>
+              <strong>{{ day.rainfall | number:'1.0-1' }} mm</strong>
+            </div>
+
+            <div class="forecast-detail">
+              <span>💨 Max wind</span>
+              <strong>{{ day.windSpeed | number:'1.0-1' }} km/h</strong>
+            </div>
+          </article>
+        }
+      </div>
+
+      <p class="forecast-note">
+        Forecast values are estimates and may change. Check updated
+        conditions before making important farming decisions.
+      </p>
+    }
+  </section>
+
+  <!-- Telugu farming advice -->
+  <section class="advice-section">
+    <h2>🌱 రైతు సలహాలు</h2>
+    <p>రేపటి వాతావరణాన్ని బట్టి మీ పంటకు సలహాలు పొందండి.</p>
+
+    <div class="advice-form">
+      <label for="cropName">పంటను ఎంచుకోండి</label>
+
+      <select id="cropName" [(ngModel)]="cropName">
+        <option value="paddy">వరి (Paddy)</option>
+        <option value="cotton">పత్తి (Cotton)</option>
+        <option value="maize">మొక్కజొన్న (Maize)</option>
+        <option value="chilli">మిరప (Chilli)</option>
+        <option value="groundnut">వేరుశనగ (Groundnut)</option>
+        <option value="banana">అరటి (Banana)</option>
+        <option value="sugarcane">చెరకు (Sugarcane)</option>
+        <option value="tomato">టమాటా (Tomato)</option>
+        <option value="turmeric">పసుపు (Turmeric)</option>
+        <option value="green gram">పెసలు (Green gram)</option>
+      </select>
+
+      <label for="growthStage">పంట దశను ఎంచుకోండి</label>
+
+      <select id="growthStage" [(ngModel)]="growthStage">
+        <option value="sowing">విత్తనాలు వేసే దశ</option>
+        <option value="growing">పెరుగుదల దశ</option>
+        <option value="flowering">పూత దశ</option>
+        <option value="fruiting">కాయ దశ</option>
+        <option value="harvested">కోత దశ</option>
+      </select>
+
+      <button
+        type="button"
+        (click)="loadAdvice()"
+        [disabled]="adviceLoading"
+      >
+        {{
+          adviceLoading
+            ? 'సలహాలు పొందుతున్నాం...'
+            : '🌦️ రైతు సలహాలు పొందండి'
+        }}
+      </button>
     </div>
 
-  } @else {
+    @if (adviceLoading) {
+      <div class="message">వాతావరణ సమాచారం పొందుతున్నాం...</div>
+    } @else if (adviceError) {
+      <div class="error">{{ adviceError }}</div>
+    } @else if (advice) {
+      <div class="advice-results">
+        <h3>📅 తేదీ: {{ advice.forecastDate | date:'mediumDate' }}</h3>
+        <h3>🌾 పంట: {{ advice.advice.cropName }}</h3>
 
-    <div class="weather-grid">
-
-      @for (item of weather; track item.id) {
-
-        <div class="weather-card">
-
-          <h2>📍 {{ item.village }}</h2>
-
-          <div class="condition">
-            🌤️ {{ item.weatherCondition }}
-          </div>
-
-          <div class="weather-info">
-
-            <div>
-              <span>🌡️</span>
-              <strong>Temperature</strong>
-              <p>{{ item.temperature }} °C</p>
-            </div>
-
-            <div>
-              <span>💧</span>
-              <strong>Humidity</strong>
-              <p>{{ item.humidity }} %</p>
-            </div>
-
-            <div>
-              <span>🌧️</span>
-              <strong>Rainfall</strong>
-              <p>{{ item.rainfall }} mm</p>
-            </div>
-
-          </div>
-
-          <p class="recorded">
-            Updated: {{ item.recordedAt | date:'medium' }}
+        <div class="advice-metrics">
+          <p>
+            🌧️ వర్షం పడే అవకాశం:
+            {{ advice.advice.rainProbabilityPercent }}%
           </p>
-
+          <p>
+            💧 అంచనా వర్షపాతం:
+            {{ advice.advice.expectedRainfallMm }} mm
+          </p>
+          <p>
+            💨 గరిష్ఠ గాలి వేగం:
+            {{ advice.advice.maximumWindSpeedKmh }} km/h
+          </p>
         </div>
 
-      }
+        <div class="advice-card">
+          <h4>🌾 పంట కోత సలహా</h4>
+          <p>{{ advice.advice.harvestAdvice }}</p>
+        </div>
 
-    </div>
+        <div class="advice-card">
+          <h4>🧪 ఎరువుల సలహా</h4>
+          <p>{{ advice.advice.fertilizerAdvice }}</p>
+        </div>
 
-  }
+        <div class="advice-card">
+          <h4>🛡️ పురుగుమందుల సలహా</h4>
+          <p>{{ advice.advice.pesticideAdvice }}</p>
+        </div>
+      </div>
+    }
+  </section>
 
 </div>

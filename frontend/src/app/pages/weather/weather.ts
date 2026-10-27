@@ -1,7 +1,13 @@
+
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { WeatherService, WeatherLog } from '../../services/weather';
+import {
+  WeatherService,
+  WeatherLog,
+  WeatherAdviceResponse,
+  WeatherForecastDay
+} from '../../services/weather';
 
 @Component({
   selector: 'app-weather',
@@ -12,42 +18,49 @@ import { WeatherService, WeatherLog } from '../../services/weather';
 })
 export class Weather implements OnInit {
 
+  // Current weather
   village = '';
   weather: WeatherLog[] = [];
   loading = false;
   errorMessage = '';
 
+  // Seven-day forecast
+  forecast: WeatherForecastDay[] = [];
+  forecastLoading = false;
+  forecastError = '';
+
+  // Crop advice
+  cropName = 'paddy';
+  growthStage = 'growing';
+
+  latitude = 16.977152;
+  longitude = 81.80249;
+
+  advice: WeatherAdviceResponse | null = null;
+  adviceLoading = false;
+  adviceError = '';
+
   constructor(private weatherService: WeatherService) {}
 
   ngOnInit(): void {
-    console.log('WEATHER COMPONENT STARTED');
     this.loadWeather();
+    this.loadForecast();
   }
 
+  // Load current weather
   loadWeather(): void {
-
-    console.log('loadWeather() called');
-
     if (this.loading) {
-      console.log('Already loading - stopping duplicate request');
       return;
     }
 
     this.loading = true;
     this.errorMessage = '';
 
-    console.log('Loading = TRUE');
-
     this.weatherService.getWeather(this.village).subscribe({
       next: (response) => {
-        console.log('Weather response:', response);
-
         this.weather = response;
         this.loading = false;
-
-        console.log('Loading = FALSE');
       },
-
       error: (error) => {
         console.error('Weather API error:', error);
 
@@ -57,13 +70,86 @@ export class Weather implements OnInit {
           'Unable to load weather information.';
 
         this.loading = false;
+      }
+    });
+  }
 
-        console.log('Loading = FALSE because of ERROR');
+  // Load seven-day forecast
+  loadForecast(): void {
+    if (this.forecastLoading) {
+      return;
+    }
+
+    this.forecastLoading = true;
+    this.forecastError = '';
+
+    this.weatherService.getForecast(
+      this.latitude,
+      this.longitude
+    ).subscribe({
+      next: (response) => {
+        const daily = response.daily;
+
+        this.forecast = daily.time.map((date, index) => ({
+          date,
+          maxTemperature: daily.temperature_2m_max[index],
+          minTemperature: daily.temperature_2m_min[index],
+          rainProbability:
+            daily.precipitation_probability_max[index],
+          rainfall: daily.precipitation_sum[index],
+          windSpeed: daily.wind_speed_10m_max[index]
+        }));
+
+        this.forecastLoading = false;
       },
+      error: (error) => {
+        console.error('Weather forecast API error:', error);
 
-      complete: () => {
-        console.log('Weather request completed');
-        this.loading = false;
+        this.forecastError =
+          error?.userMessage ||
+          error?.error?.message ||
+          'Unable to load the seven-day forecast. Please try again.';
+
+        this.forecastLoading = false;
+      }
+    });
+  }
+
+  // Load Telugu farming advice for the selected crop
+  loadAdvice(): void {
+    if (this.adviceLoading) {
+      return;
+    }
+
+    if (!this.cropName.trim() || !this.growthStage.trim()) {
+      this.adviceError =
+        'Please select a crop and growth stage.';
+      return;
+    }
+
+    this.adviceLoading = true;
+    this.adviceError = '';
+    this.advice = null;
+
+    this.weatherService.getWeatherAdvice(
+      this.cropName,
+      this.growthStage,
+      this.latitude,
+      this.longitude
+    ).subscribe({
+      next: (response) => {
+        this.advice = response;
+        this.adviceLoading = false;
+      },
+      error: (error) => {
+        console.error('Farming advice API error:', error);
+
+        this.adviceError =
+          error?.error?.message ||
+          error?.userMessage ||
+          'Unable to load farming advice. Please try again.';
+
+        this.adviceLoading = false;
       }
     });
   }
