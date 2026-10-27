@@ -27,6 +27,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // 3. HTTP client for external AI APIs
 builder.Services.AddHttpClient();
+builder.Services.AddHttpClient<WeatherForecastService>();
+builder.Services.AddScoped<WeatherAdvisoryService>();
 
 // 4. Authentication services
 builder.Services.AddScoped<IAuthService, AuthService>();
