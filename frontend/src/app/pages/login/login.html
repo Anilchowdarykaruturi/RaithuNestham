@@ -1,19 +1,12 @@
+
 <div class="login-page">
-
   <div class="login-box">
-
     <h1>🌾 RaithuNestham</h1>
-
     <h2>Login</h2>
 
-    <form (ngSubmit)="login()">
-
-      <!-- Username -->
+    <form (ngSubmit)="login()" #loginForm="ngForm">
       <div class="form-group">
-
-        <label for="username">
-          Username
-        </label>
+        <label for="username">Username</label>
 
         <input
           id="username"
@@ -22,17 +15,13 @@
           [(ngModel)]="username"
           placeholder="Enter your username"
           required
+          autocomplete="username"
           [disabled]="loading"
         />
-
       </div>
 
-      <!-- Password -->
       <div class="form-group">
-
-        <label for="password">
-          Password
-        </label>
+        <label for="password">Password</label>
 
         <input
           id="password"
@@ -41,40 +30,32 @@
           [(ngModel)]="password"
           placeholder="Enter your password"
           required
+          autocomplete="current-password"
           [disabled]="loading"
         />
-
       </div>
 
-      <!-- Error message -->
       @if (errorMessage) {
-
-        <div class="error-message">
+        <div class="error-message" role="alert">
           {{ errorMessage }}
         </div>
-
       }
 
-      <!-- Login button -->
       <button
         type="submit"
-        [disabled]="loading">
-
+        [disabled]="loading || loginForm.invalid"
+      >
         @if (loading) {
           Logging in...
         } @else {
           Login
         }
-
       </button>
-
     </form>
 
     <p>
       Don't have an account?
       <a routerLink="/register">Register</a>
     </p>
-
   </div>
-
 </div>

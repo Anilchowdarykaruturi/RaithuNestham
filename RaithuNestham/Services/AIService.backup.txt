@@ -1,0 +1,314 @@
+﻿
+using System;
+using System.Linq;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using RaithuNestham.Data;
+using RaithuNestham.Services.Interfaces;
+using RaithuNestham.Services.RAG;
+
+namespace RaithuNestham.Services;
+
+public class AIService : IAIService
+{
+    private readonly ApplicationDbContext _context;
+    private readonly HttpClient _httpClient;
+    private readonly RagRetrievalService _ragRetrievalService;
+    private readonly WeatherForecastService _weatherForecastService;
+
+    public AIService(
+        ApplicationDbContext context,
+        IHttpClientFactory httpClientFactory,
+        IConfiguration configuration,
+        RagRetrievalService ragRetrievalService,
+        WeatherForecastService weatherForecastService)
+    {
+        _context = context;
+        _httpClient = httpClientFactory.CreateClient();
+        _ragRetrievalService = ragRetrievalService;
+        _weatherForecastService = weatherForecastService;
+    }
+
+    public async Task<string> AskAsync(
+        int farmerId,
+        string question)
+    {
+        if (string.IsNullOrWhiteSpace(question))
+        {
+            return "Please enter a question.";
+        }
+
+        var farmer = await _context.Farmers
+            .Include(x => x.Fields)
+            .FirstOrDefaultAsync(x => x.Id == farmerId);
+
+        if (farmer == null)
+        {
+            return "Farmer information was not found.";
+        }
+
+        var apiKey =
+            Environment.GetEnvironmentVariable("GEMINI_API_KEY");
+
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            throw new InvalidOperationException(
+                "GEMINI_API_KEY environment variable is not configured.");
+        }
+
+        // STEP 1: Retrieve relevant farming knowledge using RAG.
+        var relevantChunks =
+            await _ragRetrievalService.RetrieveRelevantChunksAsync(
+                question,
+                3);
+
+        var retrievedContext = relevantChunks.Count > 0
+            ? string.Join(
+                "\n\n--- Retrieved document section ---\n\n",
+                relevantChunks)
+            : "No relevant information was found in the farming knowledge documents.";
+
+        // STEP 2: Retrieve live weather when relevant.
+        var weatherContext =
+     await GetWeatherContextAsync(question, farmer);
+
+        // STEP 3: Build the bilingual AI prompt.
+        var prompt =
+            "You are RaithuNestham, an AI farming assistant for farmers in Andhra Pradesh. " +
+            "Give clear, practical, safe and easy-to-understand farming guidance. " +
+            "Consider the farmer's information when relevant.\n\n" +
+
+            "RETRIEVED FARMING KNOWLEDGE:\n" +
+            retrievedContext + "\n\n" +
+
+            "LIVE WEATHER DATA:\n" +
+            weatherContext + "\n\n" +
+
+            "RAG GROUNDING RULES:\n" +
+            "Use retrieved farming knowledge when relevant. Do not claim that documents " +
+            "contain information they do not contain. If information is insufficient, " +
+            "say so. Distinguish general knowledge from retrieved information. " +
+            "Never invent facts or claim to have consulted a source when you have not.\n\n" +
+
+            "WEATHER GROUNDING RULES:\n" +
+            "Use the supplied weather data only when it contains actual observations or forecasts. " +
+            "Never invent current temperature, rainfall, humidity, wind speed, or forecast values. " +
+            "Clearly distinguish current observations from future forecasts. " +
+            "If live weather is unavailable, explicitly say that it could not be retrieved. " +
+            "Do not present a forecast as a certainty.\n\n" +
+
+            "FARMING SAFETY RULES:\n" +
+            "Consider crop, crop stage, soil, irrigation, season, and local agricultural " +
+            "recommendations where relevant. Do not invent pesticide or fertilizer dosages, " +
+            "product labels, prices, government schemes, or official recommendations. " +
+            "Advise farmers to follow product labels and local agricultural guidance. " +
+            "Ask a short follow-up question when important information is missing.\n\n" +
+
+            "LANGUAGE RULE - MANDATORY:\n" +
+            "Answer every question in BOTH Telugu and English. " +
+            "Write the Telugu section in Telugu script, never Telugu transliteration. " +
+            "Always provide Telugu first and English second.\n\n" +
+
+            "REQUIRED RESPONSE FORMAT:\n\n" +
+            "తెలుగు:\n" +
+            "[Complete answer in Telugu script]\n\n" +
+            "English:\n" +
+            "[Complete English translation]\n\n" +
+
+            $"Farmer name: {farmer.FullName}\n" +
+            $"Question: {question}";
+
+        // STEP 4: Send the prompt to Gemini.
+        var requestBody = new
+        {
+            model = "gemini-3.6-flash",
+            input = prompt
+        };
+
+        var json = JsonSerializer.Serialize(requestBody);
+
+        using var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            "https://generativelanguage.googleapis.com/v1beta/interactions");
+
+        request.Headers.Add("x-goog-api-key", apiKey);
+
+        request.Content = new StringContent(
+            json,
+            Encoding.UTF8,
+            "application/json");
+
+        using var response =
+            await _httpClient.SendAsync(request);
+
+        var responseContent =
+            await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            // Avoid returning API keys or provider details to the client.
+            throw new InvalidOperationException(
+                $"Gemini API request failed with HTTP status {(int)response.StatusCode}.");
+        }
+
+        using var document =
+            JsonDocument.Parse(responseContent);
+
+        if (document.RootElement.TryGetProperty(
+            "output",
+            out var output))
+        {
+            return output.ToString();
+        }
+
+        if (document.RootElement.TryGetProperty(
+            "steps",
+            out var steps))
+        {
+            foreach (var step in steps.EnumerateArray())
+            {
+                if (step.TryGetProperty(
+                    "type",
+                    out var type) &&
+                    type.GetString() == "model_output")
+                {
+                    if (step.TryGetProperty(
+                        "content",
+                        out var content))
+                    {
+                        foreach (var item in content.EnumerateArray())
+                        {
+                            if (item.TryGetProperty(
+                                "text",
+                                out var text))
+                            {
+                                return text.GetString()
+                                    ?? "No response received from Gemini.";
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return "No response received from Gemini.";
+    }
+
+    // Retrieves actual weather data for weather-related questions.
+
+    private async Task<string> GetWeatherContextAsync(
+        string question,
+        RaithuNestham.Models.Farmer farmer)
+    {
+        var weatherKeywords = new[]
+        {
+        "weather", "rain", "rainfall", "temperature",
+        "forecast", "humidity", "wind",
+        "వాతావరణం", "వర్షం", "ఉష్ణోగ్రత",
+        "వర్షపాతం", "గాలి"
+    };
+
+        var asksAboutWeather = weatherKeywords.Any(keyword =>
+            question.Contains(
+                keyword,
+                StringComparison.OrdinalIgnoreCase));
+
+        if (!asksAboutWeather)
+        {
+            return "No live weather lookup was requested. Do not invent weather conditions.";
+        }
+
+        var village = farmer.Village?.Trim();
+        var mandal = farmer.Mandal?.Trim();
+        var district = farmer.District?.Trim();
+        var state = farmer.State?.Trim();
+
+        if (string.IsNullOrWhiteSpace(village))
+        {
+            return "The farmer's registered village is missing. " +
+                   "Live weather could not be selected reliably. " +
+                   "Ask the farmer to update their village in their profile. " +
+                   "Do not invent weather data or use a different village.";
+        }
+
+        var locationParts = new[]
+        {
+        village,
+        mandal,
+        district,
+        state,
+        "India"
+    };
+
+        var locationQuery = string.Join(
+            ", ",
+            locationParts
+                .Where(part => !string.IsNullOrWhiteSpace(part))
+                .Distinct(StringComparer.OrdinalIgnoreCase));
+
+        try
+        {
+            using var search =
+                await _weatherForecastService.SearchLocationAsync(
+                    locationQuery);
+
+            if (!search.RootElement.TryGetProperty(
+                    "results", out var matches) ||
+                matches.ValueKind != JsonValueKind.Array ||
+                matches.GetArrayLength() == 0)
+            {
+                return $"Weather location '{locationQuery}' could not be found. " +
+                       "Ask the farmer to verify their village, mandal and district. " +
+                       "Do not substitute Kaldhari or invent weather data.";
+            }
+
+            var match = matches[0];
+
+            var latitude = match.GetProperty("latitude").GetDouble();
+            var longitude = match.GetProperty("longitude").GetDouble();
+
+            var resolvedName =
+                match.TryGetProperty("name", out var nameElement)
+                    ? nameElement.GetString() ?? village
+                    : village;
+
+            using var current =
+                await _weatherForecastService.GetCurrentWeatherAsync(
+                    latitude,
+                    longitude);
+
+            using var forecast =
+                await _weatherForecastService.GetForecastAsync(
+                    latitude,
+                    longitude);
+
+            return
+                $"Farmer's registered location: {locationQuery}\n" +
+                $"Weather provider location match: {resolvedName}\n" +
+                $"Coordinates: {latitude}, {longitude}\n" +
+                "Weather provider: Open-Meteo\n" +
+                "Current weather response:\n" +
+                current.RootElement.GetRawText() + "\n\n" +
+                "Seven-day forecast response:\n" +
+                forecast.RootElement.GetRawText() + "\n\n" +
+                "Use only values present in these responses. " +
+                "Clearly distinguish current observations from forecasts. " +
+                "If the location match appears inconsistent with the registered location, " +
+                "say that the location needs verification. Do not invent missing values.";
+        }
+        catch (Exception ex) when (
+            ex is HttpRequestException ||
+            ex is TaskCanceledException ||
+            ex is JsonException)
+        {
+            return
+                $"Live weather could not be retrieved for {locationQuery}. " +
+                "Do not invent current conditions or forecast values. " +
+                "Tell the farmer that live weather is temporarily unavailable.";
+        }
+    }
+}

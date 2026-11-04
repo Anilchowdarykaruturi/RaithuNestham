@@ -3,7 +3,10 @@ using System;
 using System.Linq;
 using System.Text;
 
+using Azure.Extensions.AspNetCore.DataProtection.Blobs;
+
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -20,30 +23,65 @@ var builder = WebApplication.CreateBuilder(args);
 // 1. Controllers
 builder.Services.AddControllers();
 
-// 2. SQL Server database
+// 2. Azure Blob Storage - Persistent Data Protection Keys
+var dataProtectionBlobUri =
+    builder.Configuration["DataProtection:BlobUri"];
+
+if (string.IsNullOrWhiteSpace(dataProtectionBlobUri))
+{
+    throw new InvalidOperationException(
+        "DataProtection:BlobUri is missing. Check Render environment variables.");
+}
+
+if (!Uri.TryCreate(
+        dataProtectionBlobUri,
+        UriKind.Absolute,
+        out var blobUri) ||
+    blobUri.Scheme != Uri.UriSchemeHttps)
+{
+    throw new InvalidOperationException(
+        "DataProtection:BlobUri must be a valid HTTPS URL.");
+}
+
+builder.Services
+    .AddDataProtection()
+    .SetApplicationName("RaithuNestham")
+    .PersistKeysToAzureBlobStorage(blobUri);
+
+// 3. SQL Server database with transient failure retry
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection")));
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        sqlOptions =>
+        {
+            sqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(10),
+                errorNumbersToAdd: null
+            );
+        }));
 
-// 3. HTTP client for external AI APIs
+// 4. HTTP clients and external services
 builder.Services.AddHttpClient();
 builder.Services.AddHttpClient<WeatherForecastService>();
-builder.Services.AddScoped<WeatherAdvisoryService>();
 
-// 4. Authentication services
+builder.Services.AddScoped<WeatherAdvisoryService>();
+builder.Services.AddScoped<MarketPriceService>();
+
+// 5. Authentication services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 
-// 5. AI service
+// 6. AI service
 builder.Services.AddScoped<IAIService, AIService>();
 
-// 6. RAG services
+// 7. RAG services
 builder.Services.AddScoped<KnowledgeDocumentService>();
 builder.Services.AddScoped<EmbeddingService>();
 builder.Services.AddScoped<RagRetrievalService>();
 
-// 7. JWT configuration
+// 8. JWT configuration
 var jwtKey = builder.Configuration["Jwt:Key"];
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 var jwtAudience = builder.Configuration["Jwt:Audience"];
@@ -56,7 +94,7 @@ if (string.IsNullOrWhiteSpace(jwtKey) ||
         "JWT configuration is missing. Check Jwt:Key, Jwt:Issuer, and Jwt:Audience.");
 }
 
-// 8. JWT authentication
+// 9. JWT authentication
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -80,29 +118,27 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
-// 9. CORS for local and deployed Angular frontends
+// 10. CORS configuration
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AngularPolicy", policy =>
     {
         policy
-
-.WithOrigins(
-    "http://localhost:4200",
-    "http://localhost:8080",
-    "https://localhost",
-    "capacitor://localhost",
-    "https://raithunestham.com",
-    "https://www.raithunestham.com",
-    "https://raithunestham-1.onrender.com"
-)
-
+            .WithOrigins(
+                "http://localhost:4200",
+                "http://localhost:8080",
+                "https://localhost",
+                "capacitor://localhost",
+                "https://raithunestham.com",
+                "https://www.raithunestham.com",
+                "https://raithunestham-1.onrender.com"
+            )
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
 });
 
-// 10. Swagger configuration
+// 11. Swagger configuration
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(options =>
@@ -140,28 +176,26 @@ builder.Services.AddSwaggerGen(options =>
         });
 });
 
-// 11. Build application
+// 12. Build application
 var app = builder.Build();
 
-// 12. Swagger in Development only
+// 13. Swagger in Development only
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// 13. Middleware pipeline
-// CORS must run before authentication and authorization.
+// 14. Middleware pipeline
 app.UseCors("AngularPolicy");
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-// 14. Map controller routes
+// 15. Map controller routes
 app.MapControllers();
 
-// 15. RAG development test endpoints
-// These endpoints are not exposed in Production.
+// 16. RAG development test endpoints
 if (app.Environment.IsDevelopment())
 {
     app.MapGet("/api/rag/test-chunks",
@@ -256,5 +290,5 @@ if (app.Environment.IsDevelopment())
         .WithTags("RAG Development Tests");
 }
 
-// 16. Start application
+// 17. Start application
 app.Run();

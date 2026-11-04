@@ -1,11 +1,17 @@
 ﻿
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RaithuNestham.Data;
 using RaithuNestham.Models;
 using RaithuNestham.Services;
-using System.Text.Json;
 
 namespace RaithuNestham.Controllers;
 
@@ -28,49 +34,97 @@ public class WeatherController : ControllerBase
         _advisoryService = advisoryService;
     }
 
-    // Get current weather for Kaldhari, Rajahmundry, and Amalapuram.
+    // GET: /api/Weather
+    // GET: /api/Weather?village=Kaldhari
+    // Searches for any village or town supported by Open-Meteo geocoding.
     [HttpGet]
     public async Task<IActionResult> GetWeather(
         [FromQuery] string? village = null,
         CancellationToken cancellationToken = default)
     {
-        var locations = new[]
-        {
-            new
+        var locations =
+            new List<(string Village, double Latitude, double Longitude)>
             {
-                Village = "Kaldhari",
-                Latitude = 16.977152,
-                Longitude = 81.80249
-            },
-            new
-            {
-                Village = "Rajahmundry",
-                Latitude = 17.0005,
-                Longitude = 81.8040
-            },
-            new
-            {
-                Village = "Amalapuram",
-                Latitude = 16.5787,
-                Longitude = 82.0061
-            }
-        };
+                ("Kaldhari", 16.977152, 81.80249),
+                ("Rajahmundry", 17.0005, 81.8040),
+                ("Amalapuram", 16.5787, 82.0061)
+            };
 
         if (!string.IsNullOrWhiteSpace(village))
         {
-            locations = locations
-                .Where(x => string.Equals(
-                    x.Village,
-                    village.Trim(),
-                    StringComparison.OrdinalIgnoreCase))
-                .ToArray();
+            village = village.Trim();
 
-            if (locations.Length == 0)
+            if (village.Length < 2)
             {
                 return BadRequest(new
                 {
-                    message =
-                        "Unknown village. Try Kaldhari, Rajahmundry, or Amalapuram."
+                    message = "Enter at least two characters for a village or town."
+                });
+            }
+
+            try
+            {
+                using var search =
+                    await _forecastService.SearchLocationAsync(
+                        village,
+                        cancellationToken);
+
+                if (!search.RootElement.TryGetProperty(
+                        "results", out var matches) ||
+                    matches.ValueKind != JsonValueKind.Array ||
+                    matches.GetArrayLength() == 0)
+                {
+                    return NotFound(new
+                    {
+                        message = $"No location found for '{village}'. Try another spelling or include the district or country."
+                    });
+                }
+
+                var match = matches[0];
+
+                var name = match.GetProperty("name").GetString()
+                    ?? village;
+
+                var admin1 = match.TryGetProperty("admin1", out var a)
+                    ? a.GetString()
+                    : null;
+
+                var country = match.TryGetProperty("country", out var c)
+                    ? c.GetString()
+                    : null;
+
+                var displayName = string.Join(
+                    ", ",
+                    new[] { name, admin1, country }
+                        .Where(part => !string.IsNullOrWhiteSpace(part))
+                        .Distinct(StringComparer.OrdinalIgnoreCase));
+
+                var latitude = match.GetProperty("latitude").GetDouble();
+                var longitude = match.GetProperty("longitude").GetDouble();
+
+                locations.Clear();
+                locations.Add((displayName, latitude, longitude));
+            }
+            catch (HttpRequestException)
+            {
+                return StatusCode(503, new
+                {
+                    message = "Location search is temporarily unavailable."
+                });
+            }
+            catch (TaskCanceledException)
+                when (!cancellationToken.IsCancellationRequested)
+            {
+                return StatusCode(504, new
+                {
+                    message = "Location search timed out. Please try again."
+                });
+            }
+            catch (JsonException)
+            {
+                return StatusCode(502, new
+                {
+                    message = "The location service returned invalid data."
                 });
             }
         }
@@ -89,14 +143,11 @@ public class WeatherController : ControllerBase
 
                 var root = weather.RootElement;
 
-                if (!root.TryGetProperty(
-                        "current",
-                        out var current))
+                if (!root.TryGetProperty("current", out var current))
                 {
                     return StatusCode(502, new
                     {
-                        message =
-                            $"Current weather data is missing for {location.Village}."
+                        message = $"Current weather is unavailable for {location.Village}."
                     });
                 }
 
@@ -139,6 +190,8 @@ public class WeatherController : ControllerBase
                 {
                     id = (int?)null,
                     village = location.Village,
+                    latitude = location.Latitude,
+                    longitude = location.Longitude,
                     temperature,
                     humidity,
                     rainfall,
@@ -151,8 +204,7 @@ public class WeatherController : ControllerBase
             {
                 return StatusCode(503, new
                 {
-                    message =
-                        $"Weather is temporarily unavailable for {location.Village}. Please try again."
+                    message = $"Weather is temporarily unavailable for {location.Village}."
                 });
             }
             catch (TaskCanceledException)
@@ -160,32 +212,28 @@ public class WeatherController : ControllerBase
             {
                 return StatusCode(504, new
                 {
-                    message =
-                        $"The weather request timed out for {location.Village}."
+                    message = $"The weather request timed out for {location.Village}."
                 });
             }
             catch (JsonException)
             {
                 return StatusCode(502, new
                 {
-                    message =
-                        $"Invalid weather data was received for {location.Village}."
+                    message = $"Invalid weather data was received for {location.Village}."
                 });
             }
             catch (KeyNotFoundException)
             {
                 return StatusCode(502, new
                 {
-                    message =
-                        $"Required weather information is missing for {location.Village}."
+                    message = $"Required weather information is missing for {location.Village}."
                 });
             }
             catch (InvalidOperationException)
             {
                 return StatusCode(502, new
                 {
-                    message =
-                        $"Weather information could not be read for {location.Village}."
+                    message = $"Weather information could not be read for {location.Village}."
                 });
             }
         }
@@ -193,24 +241,11 @@ public class WeatherController : ControllerBase
         return Ok(results);
     }
 
-    // Save a weather record manually.
-    [HttpPost]
-    public async Task<IActionResult> AddWeather(
-        [FromBody] WeatherLog weather)
-    {
-        weather.RecordedAt = DateTime.UtcNow;
-
-        _context.WeatherLogs.Add(weather);
-        await _context.SaveChangesAsync();
-
-        return Ok(weather);
-    }
-
-    // Get the seven-day weather forecast.
+    // GET: /api/Weather/forecast?latitude=16.977152&longitude=81.80249
     [HttpGet("forecast")]
     public async Task<IActionResult> GetForecast(
-        double latitude = 17.0,
-        double longitude = 81.8,
+        [FromQuery] double latitude = 16.977152,
+        [FromQuery] double longitude = 81.80249,
         CancellationToken cancellationToken = default)
     {
         if (latitude < -90 || latitude > 90 ||
@@ -236,8 +271,7 @@ public class WeatherController : ControllerBase
         {
             return StatusCode(503, new
             {
-                message =
-                    "Weather forecast is temporarily unavailable."
+                message = "Weather forecast is temporarily unavailable."
             });
         }
         catch (TaskCanceledException)
@@ -253,135 +287,6 @@ public class WeatherController : ControllerBase
             return StatusCode(502, new
             {
                 message = "Weather forecast data was invalid."
-            });
-        }
-    }
-
-    // Get tomorrow's Telugu farming advice for any crop.
-    [HttpGet("advice")]
-    public async Task<IActionResult> GetWeatherAdvice(
-        string cropName = "paddy",
-        string growthStage = "growing",
-        double latitude = 16.977152,
-        double longitude = 81.80249,
-        CancellationToken cancellationToken = default)
-    {
-        if (string.IsNullOrWhiteSpace(cropName) ||
-            string.IsNullOrWhiteSpace(growthStage))
-        {
-            return BadRequest(new
-            {
-                message =
-                    "Crop name and growth stage are required."
-            });
-        }
-
-        if (latitude < -90 || latitude > 90 ||
-            longitude < -180 || longitude > 180)
-        {
-            return BadRequest(new
-            {
-                message = "Invalid latitude or longitude."
-            });
-        }
-
-        try
-        {
-            using var forecast =
-                await _forecastService.GetForecastAsync(
-                    latitude,
-                    longitude,
-                    cancellationToken);
-
-            var daily = forecast.RootElement.GetProperty("daily");
-            var dates = daily.GetProperty("time");
-
-            var rainProbabilities =
-                daily.GetProperty(
-                    "precipitation_probability_max");
-
-            var rainfallAmounts =
-                daily.GetProperty("precipitation_sum");
-
-            if (dates.GetArrayLength() < 2 ||
-                rainProbabilities.GetArrayLength() < 2 ||
-                rainfallAmounts.GetArrayLength() < 2)
-            {
-                return StatusCode(503, new
-                {
-                    message =
-                        "రేపటి వాతావరణ సమాచారం అందుబాటులో లేదు."
-                });
-            }
-
-            var rainProbability =
-                rainProbabilities[1].GetDouble();
-
-            var rainfallMm =
-                rainfallAmounts[1].GetDouble();
-
-            var windSpeedKmh = 0.0;
-
-            if (daily.TryGetProperty(
-                    "wind_speed_10m_max",
-                    out var windSpeeds) &&
-                windSpeeds.ValueKind == JsonValueKind.Array &&
-                windSpeeds.GetArrayLength() > 1)
-            {
-                windSpeedKmh = windSpeeds[1].GetDouble();
-            }
-
-            var advice = _advisoryService.GetCropAdvice(
-                cropName,
-                growthStage,
-                rainProbability,
-                rainfallMm,
-                windSpeedKmh);
-
-            return Ok(new
-            {
-                forecastDate = dates[1].GetString(),
-                advice
-            });
-        }
-        catch (HttpRequestException)
-        {
-            return StatusCode(503, new
-            {
-                message =
-                    "వాతావరణ సమాచారం ప్రస్తుతం అందుబాటులో లేదు."
-            });
-        }
-        catch (TaskCanceledException)
-            when (!cancellationToken.IsCancellationRequested)
-        {
-            return StatusCode(504, new
-            {
-                message =
-                    "వాతావరణ సమాచారం పొందడానికి సమయం మించిపోయింది."
-            });
-        }
-        catch (JsonException)
-        {
-            return StatusCode(502, new
-            {
-                message = "వాతావరణ సమాచారం సరిగ్గా అందలేదు."
-            });
-        }
-        catch (KeyNotFoundException)
-        {
-            return StatusCode(502, new
-            {
-                message =
-                    "వాతావరణ సమాచారం అవసరమైన వివరాలను కలిగి లేదు."
-            });
-        }
-        catch (InvalidOperationException)
-        {
-            return StatusCode(502, new
-            {
-                message =
-                    "వాతావరణ సమాచారం చదవడంలో సమస్య ఏర్పడింది."
             });
         }
     }

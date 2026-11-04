@@ -1,4 +1,4 @@
 export const environment = {
-production: true,
-apiUrl: 'https://YOUR-PRODUCTION-API-URL/api'
+  production: true,
+  apiUrl: 'https://raithunestham.onrender.com/api'
 };

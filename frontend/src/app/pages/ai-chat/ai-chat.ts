@@ -1,274 +1,169 @@
 import {
-Component,
-inject,
-ChangeDetectorRef
+  Component,
+  inject,
+  ChangeDetectorRef
 } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 
 import {
-AiService,
-AIChatResponse
+  AiService,
+  AIChatResponse
 } from '../../services/ai';
 
+import { AuthService } from '../../services/auth';
+
 import {
-DomSanitizer,
-SafeHtml
+  DomSanitizer,
+  SafeHtml
 } from '@angular/platform-browser';
 
 interface ChatMessage {
-sender: 'user' | 'ai';
-text: string;
-html?: SafeHtml;
+  sender: 'user' | 'ai';
+  text: string;
+  html?: SafeHtml;
 }
 
 @Component({
-selector: 'app-ai-chat',
-standalone: true,
-imports: [FormsModule],
-templateUrl: './ai-chat.html',
-styleUrl: './ai-chat.css'
+  selector: 'app-ai-chat',
+  standalone: true,
+  imports: [FormsModule],
+  templateUrl: './ai-chat.html',
+  styleUrl: './ai-chat.css'
 })
 export class AiChat {
+  private aiService = inject(AiService);
+  private authService = inject(AuthService);
+  private cdr = inject(ChangeDetectorRef);
+  private sanitizer = inject(DomSanitizer);
 
-private aiService = inject(AiService);
+  question = '';
+  loading = false;
+  error = '';
 
-private cdr = inject(ChangeDetectorRef);
+  language: 'en' | 'te' = 'en';
 
-private sanitizer = inject(DomSanitizer);
-
-farmerId = 1;
-
-question = '';
-
-loading = false;
-
-error = '';
-
-messages: ChatMessage[] = [
-{
-sender: 'ai',
-text: 'Namaste! How can I help you with your farming needs today?',
-html: 'Namaste! How can I help you with your farming needs today?'
-}
-];
-
-askQuestion(): void {
-
-
-const questionText = this.question.trim();
-
-/*
- * Prevent duplicate requests.
- */
-if (this.loading) {
-  return;
-}
-
-/*
- * Validate the question.
- */
-if (!questionText) {
-  this.error = 'Please enter a farming question.';
-  return;
-}
-
-this.error = '';
-
-/*
- * Add user's question to the conversation.
- */
-this.messages.push({
-  sender: 'user',
-  text: questionText
-});
-
-/*
- * Clear the input.
- */
-this.question = '';
-
-/*
- * Show loading state.
- */
-this.loading = true;
-
-/*
- * Send question to backend.
- */
-this.aiService.chat({
-  farmerId: this.farmerId,
-  question: questionText
-}).subscribe({
-
-  /*
-   * Successful response.
-   */
-  next: (response: AIChatResponse) => {
-
-    const formattedHtml =
-      this.formatAiResponse(response.answer);
-
-    this.messages.push({
+  messages: ChatMessage[] = [
+    {
       sender: 'ai',
-      text: response.answer,
-      html: formattedHtml
-    });
+      text: 'Welcome, Farmer! Ask me about your crops, weather, fertilizers, or pest problems. I am here to help.',
+      html: 'Welcome, Farmer! Ask me about your crops, weather, fertilizers, or pest problems. I am here to help.'
+    }
+  ];
 
-    this.loading = false;
+  setLanguage(language: 'en' | 'te'): void {
+    this.language = language;
 
-    this.cdr.detectChanges();
-  },
+    const welcomeMessage =
+      language === 'te'
+        ? 'రైతు అన్నా, స్వాగతం! మీ పంటలు, వాతావరణం, ఎరువులు లేదా పురుగుల సమస్యల గురించి అడగండి.'
+        : 'Welcome, Farmer! Ask me about your crops, weather, fertilizers, or pest problems. I am here to help.';
 
-  /*
-   * API error.
-   */
-  error: (error: any) => {
-
-    this.error =
-      error?.userMessage ||
-      error?.error?.message ||
-      'Unable to get a response from AI.';
-
-    this.loading = false;
+    // Update the initial greeting if the conversation has not started.
+    if (
+      this.messages.length === 1 &&
+      this.messages[0].sender === 'ai'
+    ) {
+      this.messages[0] = {
+        sender: 'ai',
+        text: welcomeMessage,
+        html: welcomeMessage
+      };
+    }
 
     this.cdr.detectChanges();
   }
 
-});
+  askQuestion(): void {
+    const questionText = this.question.trim();
 
+    if (this.loading) {
+      return;
+    }
 
-}
+    if (!questionText) {
+      this.error = 'Please enter a farming question.';
+      return;
+    }
 
-/*
+    const farmerId = this.authService.getFarmerId();
 
-* Press Enter to send.
-* Shift + Enter creates a new line.
-  */
+    if (!farmerId || farmerId <= 0) {
+      this.error =
+        'Your farmer profile could not be identified. Please log out and log in again.';
+      return;
+    }
+
+    this.error = '';
+
+    this.messages.push({
+      sender: 'user',
+      text: questionText
+    });
+
+    this.question = '';
+    this.loading = true;
+
+    this.aiService.chat({
+      farmerId,
+      question: questionText
+    }).subscribe({
+      next: (response: AIChatResponse) => {
+        const answer = response?.answer ?? '';
+
+        this.messages.push({
+          sender: 'ai',
+          text: answer,
+          html: this.formatAiResponse(answer)
+        });
+
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+
+      error: (err: any) => {
+        this.error =
+          err?.userMessage ||
+          err?.error?.message ||
+          'Unable to get a response from AI. Please try again.';
+
+        this.loading = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
   onEnter(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      this.askQuestion();
+    }
+  }
 
-
-if (
-
-
-
-  event.key === 'Enter' &&
-  !event.shiftKey
-) {
-
-  event.preventDefault();
-
-  this.askQuestion();
-}
-
-
-}
-
-/*
-
-* Convert AI Markdown-style text into safe HTML.
-  */
   private formatAiResponse(response: string): SafeHtml {
+    // Escape HTML before applying limited formatting.
+    let html = response
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
 
+    // Support Markdown bold.
+    html = html.replace(
+      /\*\*(.*?)\*\*/g,
+      '<strong>$1</strong>'
+    );
 
-let html = response;
+    // Support bullet points.
+    html = html.replace(/^\s*[-*]\s+/gm, '• ');
 
+    // Support horizontal rules.
+    html = html.replace(/^\s*---+\s*$/gm, '<hr>');
 
+    // Preserve line breaks.
+    html = html.replace(/\r?\n/g, '<br>');
 
-/*
- * Escape HTML first so AI output cannot inject HTML/JavaScript.
- */
-html = html
-  .replace(/&/g, '&amp;')
-  .replace(/</g, '&lt;')
-  .replace(/>/g, '&gt;')
-  .replace(/"/g, '&quot;')
-  .replace(/'/g, '&#039;');
-
-/*
- * Telugu heading.
- *
- * తెలుగు:
- *
- * becomes:
- *
- * <div class="language-heading telugu-heading">
- *   తెలుగు
- * </div>
- */
-html = html.replace(
-  /(^|\n)\s*తెలుగు\s*:/gi,
-  '$1<div class="language-heading telugu-heading">తెలుగు</div>'
-);
-
-/*
- * English heading.
- *
- * English:
- *
- * becomes:
- *
- * <div class="language-heading english-heading">
- *   English
- * </div>
- */
-html = html.replace(
-  /(^|\n)\s*English\s*:/gi,
-  '$1<div class="language-heading english-heading">English</div>'
-);
-
-/*
- * Convert Markdown bold.
- *
- * **text**
- *
- * becomes:
- *
- * <strong>text</strong>
- */
-html = html.replace(
-  /\*\*(.*?)\*\*/g,
-  '<strong>$1</strong>'
-);
-
-/*
- * Convert Markdown bullet lines.
- *
- * * Urea
- *
- * becomes:
- *
- * • Urea
- */
-html = html.replace(
-  /^\s*\*\s+/gm,
-  '• '
-);
-
-/*
- * Convert horizontal rules.
- *
- * ---
- *
- * becomes:
- *
- * <hr>
- */
-html = html.replace(
-  /^\s*---+\s*$/gm,
-  '<hr>'
-);
-
-/*
- * Preserve line breaks and blank lines.
- */
-html = html.replace(
-  /\r?\n/g,
-  '<br>'
-);
-
-return this.sanitizer.bypassSecurityTrustHtml(html);
-
-
-}
+    return this.sanitizer.bypassSecurityTrustHtml(html);
+  }
 }

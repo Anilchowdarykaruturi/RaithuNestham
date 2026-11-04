@@ -1,8 +1,9 @@
 
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
+
 import { AuthService } from '../../services/auth';
 
 @Component({
@@ -12,7 +13,8 @@ import { AuthService } from '../../services/auth';
   templateUrl: './login.html',
   styleUrl: './login.css'
 })
-export class Login {
+export class Login implements OnInit {
+
   username = '';
   password = '';
   loading = false;
@@ -23,8 +25,17 @@ export class Login {
     private router: Router
   ) {}
 
+  ngOnInit(): void {
+
+    // If a saved session exists, skip the login page.
+    if (this.authService.isLoggedIn()) {
+      this.router.navigateByUrl('/dashboard', {
+        replaceUrl: true
+      });
+    }
+  }
+
   login(): void {
-    console.log('LOGIN BUTTON CLICKED');
 
     this.errorMessage = '';
     this.username = this.username.trim();
@@ -40,25 +51,21 @@ export class Login {
     }
 
     if (this.loading) {
-      console.log('Login request already in progress.');
       return;
     }
 
     this.loading = true;
-
-    console.log('Sending login request...');
 
     this.authService
       .login(this.username, this.password)
       .pipe(
         finalize(() => {
           this.loading = false;
-          console.log('Login request finished.');
         })
       )
       .subscribe({
+
         next: (response) => {
-          console.log('Login response received.');
 
           if (!response?.token) {
             this.errorMessage =
@@ -66,10 +73,13 @@ export class Login {
             return;
           }
 
-          this.router.navigate(['/dashboard']);
+          this.router.navigateByUrl('/dashboard', {
+            replaceUrl: true
+          });
         },
 
         error: (error) => {
+
           console.error('Login failed:', error);
 
           if (error.status === 0) {

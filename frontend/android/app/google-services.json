@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "182994271132",
+    "project_id": "raithunestham-2bb18",
+    "storage_bucket": "raithunestham-2bb18.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:182994271132:android:0616533ffbd776742aa659",
+        "android_client_info": {
+          "package_name": "com.raithunestham.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCppvet3wn8Sc2ocfZm6Pdqcai7ejnZB8U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

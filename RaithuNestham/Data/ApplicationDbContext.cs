@@ -1,8 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿
+using Microsoft.EntityFrameworkCore;
 using RaithuNestham.Models;
 
 namespace RaithuNestham.Data;
-using RaithuNestham.Models;
 
 public class ApplicationDbContext : DbContext
 {
@@ -12,7 +12,11 @@ public class ApplicationDbContext : DbContext
     {
     }
 
+    // Database tables
     public DbSet<User> Users => Set<User>();
+
+    public DbSet<DeviceRegistration> DeviceRegistrations
+        => Set<DeviceRegistration>();
 
     public DbSet<Farmer> Farmers => Set<Farmer>();
 
@@ -29,14 +33,20 @@ public class ApplicationDbContext : DbContext
     public DbSet<Pesticide> Pesticides => Set<Pesticide>();
 
     public DbSet<GovernmentScheme> GovernmentSchemes
-        => Set<GovernmentScheme>(); public DbSet<EquipmentSubsidy> EquipmentSubsidies { get; set; }
+        => Set<GovernmentScheme>();
+
+    public DbSet<EquipmentSubsidy> EquipmentSubsidies
+        => Set<EquipmentSubsidy>();
 
     public DbSet<AIChat> AIChats => Set<AIChat>();
+
+    public DbSet<MarketPrice> MarketPrices => Set<MarketPrice>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
+        // User configuration
         modelBuilder.Entity<User>()
             .HasIndex(x => x.Username)
             .IsUnique();
@@ -47,12 +57,34 @@ public class ApplicationDbContext : DbContext
             .HasForeignKey<Farmer>(x => x.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // Device registration configuration
+        modelBuilder.Entity<DeviceRegistration>()
+            .Property(x => x.FcmToken)
+            .HasMaxLength(2048)
+            .IsRequired();
+
+        modelBuilder.Entity<DeviceRegistration>()
+            .Property(x => x.Platform)
+            .HasMaxLength(20)
+            .IsRequired();
+
+        modelBuilder.Entity<DeviceRegistration>()
+            .HasOne(x => x.User)
+            .WithMany()
+            .HasForeignKey(x => x.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<DeviceRegistration>()
+            .HasIndex(x => x.UserId);
+
+        // Farmer and field relationships
         modelBuilder.Entity<Farmer>()
             .HasMany(x => x.Fields)
             .WithOne(x => x.Farmer)
             .HasForeignKey(x => x.FarmerId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // Field and crop record relationships
         modelBuilder.Entity<Field>()
             .HasMany(x => x.CropRecords)
             .WithOne(x => x.Field)
@@ -65,24 +97,24 @@ public class ApplicationDbContext : DbContext
             .HasForeignKey(x => x.CropId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        // Farmer and AI chat relationship
         modelBuilder.Entity<Farmer>()
             .HasMany<AIChat>()
             .WithOne(x => x.Farmer)
             .HasForeignKey(x => x.FarmerId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // Field decimal precision
         modelBuilder.Entity<Field>()
-    .Property(x => x.AreaInAcres)
-    .HasPrecision(10, 2);
+            .Property(x => x.AreaInAcres)
+            .HasPrecision(10, 2);
 
+        // Crop record decimal precision
         modelBuilder.Entity<CropRecord>()
             .Property(x => x.ExpectedYield)
             .HasPrecision(18, 2);
 
-        // -----------------------------------------
         // Weather decimal precision
-        // -----------------------------------------
-
         modelBuilder.Entity<WeatherLog>()
             .Property(x => x.Temperature)
             .HasPrecision(10, 2);
@@ -94,5 +126,18 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<WeatherLog>()
             .Property(x => x.Rainfall)
             .HasPrecision(10, 2);
+
+        // Market price decimal precision
+        modelBuilder.Entity<MarketPrice>()
+            .Property(x => x.MinPrice)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<MarketPrice>()
+            .Property(x => x.MaxPrice)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<MarketPrice>()
+            .Property(x => x.ModalPrice)
+            .HasPrecision(18, 2);
     }
 }
