@@ -3,7 +3,9 @@ using System;
 using System.Linq;
 using System.Text;
 
+using Azure.Identity;
 using Azure.Extensions.AspNetCore.DataProtection.Blobs;
+using Azure.Extensions.AspNetCore.DataProtection.Keys;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
@@ -20,19 +22,45 @@ using RaithuNestham.Services.RAG;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Controllers
+// =============================================
+// 1. CONTROLLERS
+// =============================================
+
 builder.Services.AddControllers();
 
-// 2. Azure Blob Storage - Persistent Data Protection Keys
+// =============================================
+// 2. AZURE DATA PROTECTION
+// BLOB STORAGE + KEY VAULT ENCRYPTION
+// =============================================
+
 var dataProtectionBlobUri =
     builder.Configuration["DataProtection:BlobUri"];
 
-if (string.IsNullOrWhiteSpace(dataProtectionBlobUri))
+var tenantId =
+    builder.Configuration["AzureKeyVault:TenantId"];
+
+var clientId =
+    builder.Configuration["AzureKeyVault:ClientId"];
+
+var clientSecret =
+    builder.Configuration["AzureKeyVault:ClientSecret"];
+
+var keyIdentifier =
+    builder.Configuration["AzureKeyVault:KeyIdentifier"];
+
+// Validate configuration
+if (string.IsNullOrWhiteSpace(dataProtectionBlobUri) ||
+    string.IsNullOrWhiteSpace(tenantId) ||
+    string.IsNullOrWhiteSpace(clientId) ||
+    string.IsNullOrWhiteSpace(clientSecret) ||
+    string.IsNullOrWhiteSpace(keyIdentifier))
 {
     throw new InvalidOperationException(
-        "DataProtection:BlobUri is missing. Check Render environment variables.");
+        "Azure Data Protection configuration is incomplete. " +
+        "Check Render environment variables.");
 }
 
+// Validate Blob URI
 if (!Uri.TryCreate(
         dataProtectionBlobUri,
         UriKind.Absolute,
@@ -43,12 +71,36 @@ if (!Uri.TryCreate(
         "DataProtection:BlobUri must be a valid HTTPS URL.");
 }
 
+// Validate Key Vault URI
+if (!Uri.TryCreate(
+        keyIdentifier,
+        UriKind.Absolute,
+        out var keyVaultUri) ||
+    keyVaultUri.Scheme != Uri.UriSchemeHttps)
+{
+    throw new InvalidOperationException(
+        "AzureKeyVault:KeyIdentifier must be a valid HTTPS URL.");
+}
+
+// Authenticate with Azure
+var credential = new ClientSecretCredential(
+    tenantId,
+    clientId,
+    clientSecret);
+
+// Configure persistent and encrypted Data Protection keys
 builder.Services
     .AddDataProtection()
     .SetApplicationName("RaithuNestham")
-    .PersistKeysToAzureBlobStorage(blobUri);
+    .PersistKeysToAzureBlobStorage(blobUri)
+    .ProtectKeysWithAzureKeyVault(
+        keyVaultUri,
+        credential);
 
-// 3. SQL Server database with transient failure retry
+// =============================================
+// 3. SQL SERVER DATABASE
+// =============================================
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection"),
@@ -57,31 +109,45 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
             sqlOptions.EnableRetryOnFailure(
                 maxRetryCount: 5,
                 maxRetryDelay: TimeSpan.FromSeconds(10),
-                errorNumbersToAdd: null
-            );
+                errorNumbersToAdd: null);
         }));
 
-// 4. HTTP clients and external services
+// =============================================
+// 4. HTTP CLIENTS AND EXTERNAL SERVICES
+// =============================================
+
 builder.Services.AddHttpClient();
 builder.Services.AddHttpClient<WeatherForecastService>();
 
 builder.Services.AddScoped<WeatherAdvisoryService>();
 builder.Services.AddScoped<MarketPriceService>();
 
-// 5. Authentication services
+// =============================================
+// 5. AUTHENTICATION SERVICES
+// =============================================
+
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 
-// 6. AI service
+// =============================================
+// 6. AI SERVICE
+// =============================================
+
 builder.Services.AddScoped<IAIService, AIService>();
 
-// 7. RAG services
+// =============================================
+// 7. RAG SERVICES
+// =============================================
+
 builder.Services.AddScoped<KnowledgeDocumentService>();
 builder.Services.AddScoped<EmbeddingService>();
 builder.Services.AddScoped<RagRetrievalService>();
 
-// 8. JWT configuration
+// =============================================
+// 8. JWT CONFIGURATION
+// =============================================
+
 var jwtKey = builder.Configuration["Jwt:Key"];
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
 var jwtAudience = builder.Configuration["Jwt:Audience"];
@@ -91,34 +157,43 @@ if (string.IsNullOrWhiteSpace(jwtKey) ||
     string.IsNullOrWhiteSpace(jwtAudience))
 {
     throw new InvalidOperationException(
-        "JWT configuration is missing. Check Jwt:Key, Jwt:Issuer, and Jwt:Audience.");
+        "JWT configuration is missing. " +
+        "Check Jwt:Key, Jwt:Issuer, and Jwt:Audience.");
 }
 
-// 9. JWT authentication
+// =============================================
+// 9. JWT AUTHENTICATION
+// =============================================
+
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwtKey)),
+        options.TokenValidationParameters =
+            new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
 
-            ValidateIssuer = true,
-            ValidIssuer = jwtIssuer,
+                IssuerSigningKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(jwtKey)),
 
-            ValidateAudience = true,
-            ValidAudience = jwtAudience,
+                ValidateIssuer = true,
+                ValidIssuer = jwtIssuer,
 
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.FromMinutes(1)
-        };
+                ValidateAudience = true,
+                ValidAudience = jwtAudience,
+
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.FromMinutes(1)
+            };
     });
 
 builder.Services.AddAuthorization();
 
-// 10. CORS configuration
+// =============================================
+// 10. CORS CONFIGURATION
+// =============================================
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AngularPolicy", policy =>
@@ -131,14 +206,16 @@ builder.Services.AddCors(options =>
                 "capacitor://localhost",
                 "https://raithunestham.com",
                 "https://www.raithunestham.com",
-                "https://raithunestham-1.onrender.com"
-            )
+                "https://raithunestham-1.onrender.com")
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
 });
 
-// 11. Swagger configuration
+// =============================================
+// 11. SWAGGER CONFIGURATION
+// =============================================
+
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(options =>
@@ -149,15 +226,16 @@ builder.Services.AddSwaggerGen(options =>
         Version = "v1"
     });
 
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Enter your JWT token."
-    });
+    options.AddSecurityDefinition("Bearer",
+        new OpenApiSecurityScheme
+        {
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            In = ParameterLocation.Header,
+            Description = "Enter your JWT token."
+        });
 
     options.AddSecurityRequirement(
         new OpenApiSecurityRequirement
@@ -176,26 +254,41 @@ builder.Services.AddSwaggerGen(options =>
         });
 });
 
-// 12. Build application
+// =============================================
+// 12. BUILD APPLICATION
+// =============================================
+
 var app = builder.Build();
 
-// 13. Swagger in Development only
+// =============================================
+// 13. SWAGGER IN DEVELOPMENT ONLY
+// =============================================
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// 14. Middleware pipeline
+// =============================================
+// 14. MIDDLEWARE PIPELINE
+// =============================================
+
 app.UseCors("AngularPolicy");
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-// 15. Map controller routes
+// =============================================
+// 15. MAP CONTROLLER ROUTES
+// =============================================
+
 app.MapControllers();
 
-// 16. RAG development test endpoints
+// =============================================
+// 16. RAG DEVELOPMENT TEST ENDPOINTS
+// =============================================
+
 if (app.Environment.IsDevelopment())
 {
     app.MapGet("/api/rag/test-chunks",
@@ -290,5 +383,8 @@ if (app.Environment.IsDevelopment())
         .WithTags("RAG Development Tests");
 }
 
-// 17. Start application
+// =============================================
+// 17. START APPLICATION
+// =============================================
+
 app.Run();
