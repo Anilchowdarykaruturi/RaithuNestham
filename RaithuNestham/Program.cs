@@ -33,9 +33,11 @@ builder.Services.AddControllers();
 // BLOB STORAGE + KEY VAULT ENCRYPTION
 // =============================================
 
+// Azure Blob Storage SAS URL
 var dataProtectionBlobUri =
     builder.Configuration["DataProtection:BlobUri"];
 
+// Azure Key Vault configuration
 var tenantId =
     builder.Configuration["AzureKeyVault:TenantId"];
 
@@ -60,7 +62,7 @@ if (string.IsNullOrWhiteSpace(dataProtectionBlobUri) ||
         "Check Render environment variables.");
 }
 
-// Validate Blob URI
+// Validate Blob SAS URL
 if (!Uri.TryCreate(
         dataProtectionBlobUri,
         UriKind.Absolute,
@@ -71,18 +73,23 @@ if (!Uri.TryCreate(
         "DataProtection:BlobUri must be a valid HTTPS URL.");
 }
 
-// Validate Key Vault URI
+// Validate Key Vault key identifier
 if (!Uri.TryCreate(
         keyIdentifier,
         UriKind.Absolute,
         out var keyVaultUri) ||
-    keyVaultUri.Scheme != Uri.UriSchemeHttps)
+    keyVaultUri.Scheme != Uri.UriSchemeHttps ||
+    !string.Equals(
+        keyVaultUri.Host,
+        "raithunestham-kv-2026.vault.azure.net",
+        StringComparison.OrdinalIgnoreCase))
 {
     throw new InvalidOperationException(
-        "AzureKeyVault:KeyIdentifier must be a valid HTTPS URL.");
+        "AzureKeyVault:KeyIdentifier must be a valid HTTPS " +
+        "identifier for the RaithuNestham Key Vault.");
 }
 
-// Authenticate with Azure
+// Authenticate with Azure Key Vault
 var credential = new ClientSecretCredential(
     tenantId,
     clientId,
