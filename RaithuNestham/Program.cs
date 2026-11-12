@@ -1,11 +1,15 @@
 
 using System;
+using System.IO;
 using System.Linq;
 using System.Text;
 
 using Azure.Identity;
 using Azure.Extensions.AspNetCore.DataProtection.Blobs;
 using Azure.Extensions.AspNetCore.DataProtection.Keys;
+
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
@@ -23,89 +27,141 @@ using RaithuNestham.Services.RAG;
 var builder = WebApplication.CreateBuilder(args);
 
 // =============================================
-// 1. CONTROLLERS
+// 1. FIREBASE ADMIN SDK INITIALIZATION
+// =============================================
+
+var firebaseCredentialsPath =
+    builder.Configuration["Firebase:CredentialsPath"];
+
+if (!string.IsNullOrWhiteSpace(firebaseCredentialsPath))
+{
+    if (!File.Exists(firebaseCredentialsPath))
+    {
+        throw new FileNotFoundException(
+            "Firebase service account credentials file was not found.",
+            firebaseCredentialsPath);
+    }
+
+    FirebaseApp.Create(new AppOptions
+    {
+        Credential = CredentialFactory
+            .FromFile<ServiceAccountCredential>(
+                firebaseCredentialsPath)
+            .ToGoogleCredential()
+    });
+
+    Console.WriteLine(
+        "Firebase Admin SDK initialized successfully.");
+}
+else if (builder.Environment.IsProduction())
+{
+    throw new InvalidOperationException(
+        "Firebase:CredentialsPath is required in production.");
+}
+
+// =============================================
+// 2. CONTROLLERS
 // =============================================
 
 builder.Services.AddControllers();
 
 // =============================================
-// 2. AZURE DATA PROTECTION
-// BLOB STORAGE + KEY VAULT ENCRYPTION
+// 3. AZURE DATA PROTECTION
+// PRODUCTION: AZURE BLOB STORAGE + KEY VAULT
+// DEVELOPMENT: LOCAL DATA PROTECTION KEYS
 // =============================================
 
-// Azure Blob Storage SAS URL
-var dataProtectionBlobUri =
-    builder.Configuration["DataProtection:BlobUri"];
-
-// Azure Key Vault configuration
-var tenantId =
-    builder.Configuration["AzureKeyVault:TenantId"];
-
-var clientId =
-    builder.Configuration["AzureKeyVault:ClientId"];
-
-var clientSecret =
-    builder.Configuration["AzureKeyVault:ClientSecret"];
-
-var keyIdentifier =
-    builder.Configuration["AzureKeyVault:KeyIdentifier"];
-
-// Validate configuration
-if (string.IsNullOrWhiteSpace(dataProtectionBlobUri) ||
-    string.IsNullOrWhiteSpace(tenantId) ||
-    string.IsNullOrWhiteSpace(clientId) ||
-    string.IsNullOrWhiteSpace(clientSecret) ||
-    string.IsNullOrWhiteSpace(keyIdentifier))
+if (builder.Environment.IsProduction())
 {
-    throw new InvalidOperationException(
-        "Azure Data Protection configuration is incomplete. " +
-        "Check Render environment variables.");
-}
+    // Azure Blob Storage SAS URL
+    var dataProtectionBlobUri =
+        builder.Configuration["DataProtection:BlobUri"];
 
-// Validate Blob SAS URL
-if (!Uri.TryCreate(
-        dataProtectionBlobUri,
-        UriKind.Absolute,
-        out var blobUri) ||
-    blobUri.Scheme != Uri.UriSchemeHttps)
+    // Azure Key Vault configuration
+    var tenantId =
+        builder.Configuration["AzureKeyVault:TenantId"];
+
+    var clientId =
+        builder.Configuration["AzureKeyVault:ClientId"];
+
+    var clientSecret =
+        builder.Configuration["AzureKeyVault:ClientSecret"];
+
+    var keyIdentifier =
+        builder.Configuration["AzureKeyVault:KeyIdentifier"];
+
+    // Validate configuration
+    if (string.IsNullOrWhiteSpace(dataProtectionBlobUri) ||
+        string.IsNullOrWhiteSpace(tenantId) ||
+        string.IsNullOrWhiteSpace(clientId) ||
+        string.IsNullOrWhiteSpace(clientSecret) ||
+        string.IsNullOrWhiteSpace(keyIdentifier))
+    {
+        throw new InvalidOperationException(
+            "Azure Data Protection configuration is incomplete. " +
+            "Check Render environment variables.");
+    }
+
+    // Validate Blob SAS URL
+    if (!Uri.TryCreate(
+            dataProtectionBlobUri,
+            UriKind.Absolute,
+            out var blobUri) ||
+        blobUri.Scheme != Uri.UriSchemeHttps)
+    {
+        throw new InvalidOperationException(
+            "DataProtection:BlobUri must be a valid HTTPS URL.");
+    }
+
+    // Validate Key Vault key identifier
+    if (!Uri.TryCreate(
+            keyIdentifier,
+            UriKind.Absolute,
+            out var keyVaultUri) ||
+        keyVaultUri.Scheme != Uri.UriSchemeHttps ||
+        !string.Equals(
+            keyVaultUri.Host,
+            "raithunestham-kv-2026.vault.azure.net",
+            StringComparison.OrdinalIgnoreCase))
+    {
+        throw new InvalidOperationException(
+            "AzureKeyVault:KeyIdentifier must be a valid HTTPS " +
+            "identifier for the RaithuNestham Key Vault.");
+    }
+
+    // Authenticate with Azure Key Vault
+    var credential = new ClientSecretCredential(
+        tenantId,
+        clientId,
+        clientSecret);
+
+    // Persist Data Protection keys in Azure Blob Storage
+    // Encrypt those keys using Azure Key Vault
+    builder.Services
+        .AddDataProtection()
+        .SetApplicationName("RaithuNestham")
+        .PersistKeysToAzureBlobStorage(blobUri)
+        .ProtectKeysWithAzureKeyVault(
+            keyVaultUri,
+            credential);
+
+    Console.WriteLine(
+        "Production Azure Data Protection configured.");
+}
+else
 {
-    throw new InvalidOperationException(
-        "DataProtection:BlobUri must be a valid HTTPS URL.");
+    // Local development uses local Data Protection keys.
+    // No Azure credentials are required locally.
+    builder.Services
+        .AddDataProtection()
+        .SetApplicationName("RaithuNestham");
+
+    Console.WriteLine(
+        "Development Data Protection configured locally.");
 }
-
-// Validate Key Vault key identifier
-if (!Uri.TryCreate(
-        keyIdentifier,
-        UriKind.Absolute,
-        out var keyVaultUri) ||
-    keyVaultUri.Scheme != Uri.UriSchemeHttps ||
-    !string.Equals(
-        keyVaultUri.Host,
-        "raithunestham-kv-2026.vault.azure.net",
-        StringComparison.OrdinalIgnoreCase))
-{
-    throw new InvalidOperationException(
-        "AzureKeyVault:KeyIdentifier must be a valid HTTPS " +
-        "identifier for the RaithuNestham Key Vault.");
-}
-
-// Authenticate with Azure Key Vault
-var credential = new ClientSecretCredential(
-    tenantId,
-    clientId,
-    clientSecret);
-
-// Configure persistent and encrypted Data Protection keys
-builder.Services
-    .AddDataProtection()
-    .SetApplicationName("RaithuNestham")
-    .PersistKeysToAzureBlobStorage(blobUri)
-    .ProtectKeysWithAzureKeyVault(
-        keyVaultUri,
-        credential);
 
 // =============================================
-// 3. SQL SERVER DATABASE
+// 4. SQL SERVER DATABASE
 // =============================================
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -120,7 +176,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         }));
 
 // =============================================
-// 4. HTTP CLIENTS AND EXTERNAL SERVICES
+// 5. HTTP CLIENTS AND EXTERNAL SERVICES
 // =============================================
 
 builder.Services.AddHttpClient();
@@ -128,9 +184,10 @@ builder.Services.AddHttpClient<WeatherForecastService>();
 
 builder.Services.AddScoped<WeatherAdvisoryService>();
 builder.Services.AddScoped<MarketPriceService>();
+builder.Services.AddScoped<FirebasePushNotificationService>();
 
 // =============================================
-// 5. AUTHENTICATION SERVICES
+// 6. AUTHENTICATION SERVICES
 // =============================================
 
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -138,13 +195,13 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 
 // =============================================
-// 6. AI SERVICE
+// 7. AI SERVICE
 // =============================================
 
 builder.Services.AddScoped<IAIService, AIService>();
 
 // =============================================
-// 7. RAG SERVICES
+// 8. RAG SERVICES
 // =============================================
 
 builder.Services.AddScoped<KnowledgeDocumentService>();
@@ -152,7 +209,7 @@ builder.Services.AddScoped<EmbeddingService>();
 builder.Services.AddScoped<RagRetrievalService>();
 
 // =============================================
-// 8. JWT CONFIGURATION
+// 9. JWT CONFIGURATION
 // =============================================
 
 var jwtKey = builder.Configuration["Jwt:Key"];
@@ -169,7 +226,7 @@ if (string.IsNullOrWhiteSpace(jwtKey) ||
 }
 
 // =============================================
-// 9. JWT AUTHENTICATION
+// 10. JWT AUTHENTICATION
 // =============================================
 
 builder.Services
@@ -198,7 +255,7 @@ builder.Services
 builder.Services.AddAuthorization();
 
 // =============================================
-// 10. CORS CONFIGURATION
+// 11. CORS CONFIGURATION
 // =============================================
 
 builder.Services.AddCors(options =>
@@ -220,7 +277,7 @@ builder.Services.AddCors(options =>
 });
 
 // =============================================
-// 11. SWAGGER CONFIGURATION
+// 12. SWAGGER CONFIGURATION
 // =============================================
 
 builder.Services.AddEndpointsApiExplorer();
@@ -262,13 +319,13 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 // =============================================
-// 12. BUILD APPLICATION
+// 13. BUILD APPLICATION
 // =============================================
 
 var app = builder.Build();
 
 // =============================================
-// 13. SWAGGER IN DEVELOPMENT ONLY
+// 14. SWAGGER IN DEVELOPMENT ONLY
 // =============================================
 
 if (app.Environment.IsDevelopment())
@@ -278,7 +335,7 @@ if (app.Environment.IsDevelopment())
 }
 
 // =============================================
-// 14. MIDDLEWARE PIPELINE
+// 15. MIDDLEWARE PIPELINE
 // =============================================
 
 app.UseCors("AngularPolicy");
@@ -287,13 +344,13 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // =============================================
-// 15. MAP CONTROLLER ROUTES
+// 16. MAP CONTROLLER ROUTES
 // =============================================
 
 app.MapControllers();
 
 // =============================================
-// 16. RAG DEVELOPMENT TEST ENDPOINTS
+// 17. RAG DEVELOPMENT TEST ENDPOINTS
 // =============================================
 
 if (app.Environment.IsDevelopment())
@@ -391,7 +448,7 @@ if (app.Environment.IsDevelopment())
 }
 
 // =============================================
-// 17. START APPLICATION
+// 18. START APPLICATION
 // =============================================
 
 app.Run();
