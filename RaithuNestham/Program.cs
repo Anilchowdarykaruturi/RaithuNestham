@@ -9,7 +9,6 @@ using Azure.Extensions.AspNetCore.DataProtection.Keys;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -34,9 +33,11 @@ builder.Services.AddControllers();
 // BLOB STORAGE + KEY VAULT ENCRYPTION
 // =============================================
 
+// Azure Blob Storage SAS URL
 var dataProtectionBlobUri =
     builder.Configuration["DataProtection:BlobUri"];
 
+// Azure Key Vault configuration
 var tenantId =
     builder.Configuration["AzureKeyVault:TenantId"];
 
@@ -390,54 +391,7 @@ if (app.Environment.IsDevelopment())
 }
 
 // =============================================
-// 17. TEMPORARY KEY GENERATION TEST
-// =============================================
-
-if (builder.Configuration.GetValue<bool>(
-        "DataProtection:EnableKeyTest"))
-{
-    app.MapPost(
-        "/internal/data-protection/create-test-key",
-        (HttpContext context, IKeyManager keyManager) =>
-        {
-            var expectedToken =
-                builder.Configuration["DataProtection:KeyTestToken"];
-
-            var suppliedToken =
-                context.Request.Headers["X-Key-Test-Token"].ToString();
-
-            if (string.IsNullOrWhiteSpace(expectedToken) ||
-                !string.Equals(
-                    expectedToken,
-                    suppliedToken,
-                    StringComparison.Ordinal))
-            {
-                return Results.Unauthorized();
-            }
-
-            var now = DateTimeOffset.UtcNow;
-
-            var newKey = keyManager.CreateNewKey(
-                now,
-                now.AddDays(90));
-
-            app.Logger.LogInformation(
-                "Data Protection test key created. Key ID: {KeyId}",
-                newKey.KeyId);
-
-            return Results.Ok(new
-            {
-                Success = true,
-                Message = "New Data Protection key created.",
-                KeyId = newKey.KeyId,
-                CreatedAt = now,
-                ExpiresAt = now.AddDays(90)
-            });
-        });
-}
-
-// =============================================
-// 18. START APPLICATION
+// 17. START APPLICATION
 // =============================================
 
 app.Run();
